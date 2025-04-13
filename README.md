@@ -2,12 +2,13 @@
 
 ## Overview
 
-Run Aider is an extensible bash script designed to empower developers to create their personalized AI coding workflow tool. It provides a flexible, menu-driven interface for configuring and launching Aider with Large Language Models (LLMs).
+- Run Aider is an extensible bash script designed to empower developers to create their personalized AI coding workflow tool. 
+- It provides a flexible, menu-driven interface for configuring and launching Aider with Large Language Models (LLMs).
 
 ## Philosophy
 
 This tool is intentionally designed for continuous personal evolution. You and your team of Ai agents are encouraged to:
-- Modify the list of supported LLM vendors
+- Modify the list of supported LLM vendors and models
 - Add new interaction modes
 - Customize configuration options
 - Adapt the script to your specific workflow needs
@@ -15,24 +16,16 @@ This tool is intentionally designed for continuous personal evolution. You and y
 ## Core Features
 
 ### Interaction Modes
-- **Code Mode:** Direct AI coding collaboration
-- **Architect Mode:** Advanced multi-model planning and implementation
-- **Extend with Your Own Modes:** The script's architecture makes it easy to add custom interaction strategies
-
-### LLM Support
-The current implementation includes:
-- Google Gemini
-- Anthropic Claude
-- OpenAI GPT
-- Deepseek
-
-**Customization Tip:** Easily add new vendors by modifying the script's model arrays.
+- **Code Mode:** A coding collaboration with a single agent assigned to all Ai tasks.
+- **Architect Mode:** A coding collaboration with one agent assigned to coding and another agent assigned to editing.
 
 ### Flexible Configuration
 - Interactive model and vendor selection
 - Dynamic edit format switching
 - Secure API management
 - Contextual AI interaction
+
+**Customization:** Easily add new vendors and models by modifying the script's model arrays.
 
 ## Getting Started
 
@@ -73,7 +66,7 @@ chmod +x run-aider.sh
 
 ## Documentation
 - Interactive help: `./run-aider.sh -h`
-- Detailed documentation: `README-aider.md`
+- Detailed documentation: `README.md`
 
 ## License
 
@@ -82,6 +75,12 @@ MIT License - See `LICENSE` for details.
 **Your Tool, Your Rules: Evolve, Customize, Innovate**
 
 ## Example Interactions
+
+These example interactions showcase the tool's interactive menu system, demonstrating:
+- Mode selection (Code vs. Architect)
+- Vendor and model selection
+- Edit format switching
+- Command preview before launch
 
 ### Code Mode Selection
 ```
@@ -195,9 +194,3 @@ aider --vim --no-auto-commit --read README-prompts.md --read README-ask.md --mod
 Enter choice [1-3, 0=Back, Enter=1]:
 ```
 
-
-These example interactions showcase the tool's interactive menu system, demonstrating:
-- Mode selection (Code vs. Architect)
-- Vendor and model selection
-- Edit format switching
-- Command preview before launch
