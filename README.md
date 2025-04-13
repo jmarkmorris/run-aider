@@ -1,54 +1,203 @@
-# Run Aider: Your Interactive Launcher for Aider-Chat
+# Run Aider: Your Customizable AI Coding Assistant Launcher
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) <!-- Update if license differs -->
+## Overview
 
-Tired of typing long, complex `aider` commands? Wish you could effortlessly switch models, modes, or troubleshoot edits by changing formats on the fly? **Run Aider** is your command center for a smoother, more powerful `aider-chat` experience!
+Run Aider is an extensible bash script designed to empower developers to create their personalized AI coding workflow tool. It provides a flexible, menu-driven interface for configuring and launching Aider with Large Language Models (LLMs).
 
-This `bash` script wraps `aider` in an intuitive interactive terminal menu. Configure your AI coding sessions precisely how you want, without memorizing a single flag. Spend less time setting up and more time coding with your AI partner.
+## Philosophy
 
-## Why Use Run Aider?
+This tool is intentionally designed for continuous personal evolution. You and your team of Ai agents are encouraged to:
+- Modify the list of supported LLM vendors
+- Add new interaction modes
+- Customize configuration options
+- Adapt the script to your specific workflow needs
 
-*   **Effortless Configuration:** Ditch the command-line flag juggling. Select modes, vendors, and models through a clear, step-by-step menu.
-*   **Dual Modes:** Instantly switch between standard **Code Mode** for direct interaction and **Architect Mode** for sophisticated planning and implementation using separate LLMs.
-*   **Multi-Vendor & Model Support:** Works with Google Gemini, Anthropic Claude, OpenAI GPT, and Deepseek models. Choose the best brain for the job, including specific models for Architect and Editor roles.
-*   **Secure API Key Handling:** Automatically detects and loads API keys from environment variables or dedicated files (`$PRIMARY_KEYS_FILE` or `~/.llm_api_keys`), keeping your secrets safe and out of shell history.
-*   **On-the-Fly Edit Format Switching:** This is a game-changer! If `aider` fails to apply changes (often due to `diff` issues), the pre-launch menu lets you instantly switch between `diff`/`whole` (or `editor-diff`/`editor-whole`) formats before retrying. See [Understanding Edit Formats](#understanding-edit-format-selection) below.
-*   **Context-Aware AI:** Automatically includes `README-prompts.md` (your coding standards) and `README-ask.md` (useful `aider` prompts) in the chat context, ensuring the AI adheres to your project's guidelines from the start.
-*   **Sensible Defaults:** Launches `aider` with common useful options like `--vim` (for Vim keybindings) and `--no-auto-commit` by default.
+## Core Features
 
-## Features
+### Interaction Modes
+- **Code Mode:** Direct AI coding collaboration
+- **Architect Mode:** Advanced multi-model planning and implementation
+- **Extend with Your Own Modes:** The script's architecture makes it easy to add custom interaction strategies
 
-*   **Interactive Menu System:** User-friendly setup flow.
-*   **Mode Selection:** Code vs. Architect.
-*   **Vendor Selection:** Google, Anthropic, OpenAI, Deepseek.
-*   **Model Selection:** Granular choice for Code, Architect, and Editor roles.
-*   **API Key Management:** Secure loading from environment or files.
-*   **Pre-launch Confirmation:** Review the exact command and current edit format.
-*   **Edit Format Switching:** Toggle between `diff` and `whole` based formats *before* launch to improve edit reliability.
-*   **Automatic File Inclusion:** Adds `README-prompts.md` and `README-ask.md`.
-*   **Help Option:** Comprehensive usage guide via `./run-aider.sh -h`.
+### LLM Support
+The current implementation includes:
+- Google Gemini
+- Anthropic Claude
+- OpenAI GPT
+- Deepseek
 
-## Prerequisites
+**Customization Tip:** Easily add new vendors by modifying the script's model arrays.
 
-1.  **Bash:** The script requires `bash` to run. (Tested on macOS, likely compatible with Linux).
-2.  **Aider-Chat:** You must have `aider-chat` installed and functional. See the official [Aider Installation Guide](https://aider.chat/docs/install.html) or `README-aider.md`.
-3.  **LLM API Keys:** Obtain API keys for the LLM vendors you plan to use.
+### Flexible Configuration
+- Interactive model and vendor selection
+- Dynamic edit format switching
+- Secure API management
+- Contextual AI interaction
 
-## Installation
+## Getting Started
 
-1.  **Clone the repository (or download the script):**
-    ```bash
-    # Replace with your actual repository URL if hosting on GitHub/GitLab etc.
-    git clone https://github.com/your-username/your-repo-name.git
-    cd your-repo-name
-    ```
-    Alternatively, just download `run-aider.sh`, `README-prompts.md`, and `README-ask.md` into your project directory.
-2.  **Make the script executable:**
-    ```bash
-    chmod +x run-aider.sh
-    ```
+### Prerequisites
+- Bash shell
+- [Aider-Chat](https://aider.chat)
+- API keys for desired LLM providers
 
-## Usage
+### Installation
+```bash
+# Clone the repository
+git clone https://github.com/your-username/run-aider.git
+cd run-aider
 
-Navigate to your project directory in the terminal and simply run:
+# Make the script executable
+chmod +x run-aider.sh
+```
 
+### Usage
+```bash
+# Launch the interactive AI coding assistant
+./run-aider.sh
+```
+
+## Customization Paths
+
+1. **Vendor Expansion**
+   - Edit `run-aider.sh` to add new vendor arrays
+   - Implement vendor-specific API key handling
+
+2. **Mode Development**
+   - Extend the `select_entity` and `launch_aider` functions
+   - Create new interaction paradigms
+
+3. **Configuration Management**
+   - Modify API key loading strategies
+   - Add new configuration file support
+
+## Documentation
+- Interactive help: `./run-aider.sh -h`
+- Detailed documentation: `README-aider.md`
+
+## License
+
+MIT License - See `LICENSE` for details.
+
+**Your Tool, Your Rules: Evolve, Customize, Innovate**
+
+## Example Interactions
+
+### Code Mode Selection
+```
+Step 1: Select Aider Operating Mode
+=====================================
+             SELECT MODE
+=====================================
+1. Code Mode
+2. Architect Mode
+0. Exit
+=====================================
+Enter your choice [1-2, Enter=0]:1
+
+
+Select Code VENDOR:
+=====================================
+1. GOOGLE
+2. ANTHROPIC
+3. OPENAI
+4. DEEPSEEK
+0. Back
+=====================================
+Enter your choice [1-4, Enter=0]:1
+
+
+Select Code MODEL:
+=====================================
+1. gemini/gemini-2.5-pro-exp-03-25
+2. gemini/gemini-2.5-pro-preview-03-25
+3. gemini/gemini-2.0-flash-exp
+4. gemini/gemini-2.0-flash
+0. Back
+=====================================
+Enter your choice [1-4, Enter=0]:1
+
+
+Launching Aider: Code Mode
+Main Model:      GOOGLE/gemini/gemini-2.5-pro-exp-03-25
+-------------------------------------
+Current Edit Format: whole
+-------------------------------------
+Command to Run:
+aider --vim --no-auto-commit --read README-prompts.md --read README-ask.md --model gemini/gemini-2.5-pro-exp-03-25 --chat-mode code --edit-format whole
+-------------------------------------
+1. Launch Aider with this command
+2. Switch to Format: diff
+3. Back to Main Menu (Abort Launch)
+-------------------------------------
+Enter choice [1-3, 0=Back, Enter=1]:
+```
+
+
+
+### Architect Mode Selection
+```
+Select Architect VENDOR:
+=====================================
+1. GOOGLE
+2. ANTHROPIC
+3. OPENAI
+4. DEEPSEEK
+0. Back
+=====================================
+Enter your choice [1-4, Enter=0]:2
+
+
+Select Architect MODEL:
+=====================================
+1. claude-3-7-sonnet-20250219
+2. claude-3-5-haiku-20241022
+0. Back
+=====================================
+Enter your choice [1-2, Enter=0]:1
+
+
+Select Editor VENDOR:
+=====================================
+1. GOOGLE
+2. ANTHROPIC
+3. OPENAI
+4. DEEPSEEK
+9. Use same VENDOR and MODEL as Architect
+0. Back
+=====================================
+Enter your choice [1-4, 9, Enter=0]:4
+
+
+Select Editor MODEL:
+=====================================
+1. deepseek/deepseek-coder
+2. deepseek-reasoner
+3. deepseek/deepseek-reasoner
+4. deepseek/deepseek-chat
+0. Back
+=====================================
+Enter your choice [1-4, Enter=0]:1
+
+
+Launching Aider: Architect Mode
+Main Model:      ANTHROPIC/claude-3-7-sonnet-20250219 (Editor: DEEPSEEK/deepseek/deepseek-coder)
+-------------------------------------
+Current Edit Format: editor-whole
+-------------------------------------
+Command to Run:
+aider --vim --no-auto-commit --read README-prompts.md --read README-ask.md --model claude-3-7-sonnet-20250219 --architect --editor-model deepseek/deepseek-coder --edit-format editor-whole
+-------------------------------------
+1. Launch Aider with this command
+2. Switch to Format: editor-diff
+3. Back to Main Menu (Abort Launch)
+-------------------------------------
+Enter choice [1-3, 0=Back, Enter=1]:
+```
+
+
+These example interactions showcase the tool's interactive menu system, demonstrating:
+- Mode selection (Code vs. Architect)
+- Vendor and model selection
+- Edit format switching
+- Command preview before launch
