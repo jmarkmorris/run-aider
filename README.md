@@ -1,8 +1,9 @@
-# Run Aider: Your Customizable AI Coding Assistant Launcher
+# run-aider.sh
+Your customizable agentic Ai coding launcher
 
 ## Overview
 
-- Run Aider is an extensible bash script designed to empower developers to create their personalized AI coding workflow tool. 
+- run-aider.sh is an extensible bash script designed to empower developers to create their personalized AI coding workflow tool. 
 - It provides a flexible, menu-driven interface for configuring and launching Aider with Large Language Models (LLMs).
 
 ## Philosophy
@@ -50,19 +51,10 @@ chmod +x run-aider.sh
 ./run-aider.sh
 ```
 
-## Customization Paths
+## Customization
 
-1. **Vendor Expansion**
-   - Edit `run-aider.sh` to add new vendor arrays
-   - Implement vendor-specific API key handling
-
-2. **Mode Development**
-   - Extend the `select_entity` and `launch_aider` functions
-   - Create new interaction paradigms
-
-3. **Configuration Management**
-   - Modify API key loading strategies
-   - Add new configuration file support
+**Vendor and Model Changes**
+   - Edit `run-aider.sh` to add new vendors and models
 
 ## Documentation
 - Interactive help: `./run-aider.sh -h`
