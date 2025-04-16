@@ -146,7 +146,7 @@ TITLE_ARCH_MODEL="       SELECT ARCHITECT MODE MODEL       "
 TITLE_EDITOR_VENDOR="         SELECT EDITOR VENDOR          "
 TITLE_EDITOR_MODEL="          SELECT EDITOR MODEL           "
 TITLE_CODE_FORMAT="      SELECT CODE MODE EDIT FORMAT      "
-TITLE_ARCH_FORMAT="    SELECT ARCHITECT MODE EDIT FORMAT   "
+TITLE_ARCH_FORMAT="      SELECT ARCHITECT EDIT FORMAT      " # Updated title and centering
 TITLE_LAUNCH_CODE="      LAUNCHING AIDER: CODE MODE       "
 TITLE_LAUNCH_ARCH="    LAUNCHING AIDER: ARCHITECT MODE    "
 
@@ -481,7 +481,7 @@ select_edit_format() {
         menu_title="$TITLE_CODE_FORMAT"
     elif [[ "$mode" == "architect" ]]; then
         formats=("${ARCHITECT_EDIT_FORMATS[@]}")
-        menu_title="$TITLE_ARCH_FORMAT"
+        menu_title="$TITLE_ARCH_FORMAT" # Use updated title
     else
         echo "Error: Invalid mode passed to select_edit_format: $mode" >&2
         SELECT_EDIT_FORMAT_RESULT="invalid"
@@ -880,8 +880,8 @@ launch_aider() {
 
         echo -e "Edit Format:     ${selected_format}"
         echo -e "-------------------------------------"
-        # Add blank line before command title
-        echo -e "\nAIDER LAUNCH COMMAND\n"
+        # Removed blank line before command title
+        echo -e "AIDER LAUNCH COMMAND\n"
         # Print the command array elements, quoted for safety/clarity, and wrap
         # Use printf "%q " to quote and add spaces, then pipe to fold, then echo for newline
         printf "%q " "${current_cmd_array[@]}" | fold -s -w "$(tput cols)"
