@@ -874,14 +874,15 @@ launch_aider() {
         echo -e "Main Model:      ${main_vendor}/${main_model}${editor_display_info}"
         echo -e "Edit Format:     ${selected_format}"
         echo -e "-------------------------------------"
-        echo -e "Command to Run:"
+        echo -e "Aider Launch Command\n"
         # Print the command array elements, quoted for safety/clarity, and wrap
+        # Use printf "%q " to quote and add spaces, then pipe to fold, then echo for newline
         printf "%q " "${current_cmd_array[@]}" | fold -s -w "$(tput cols)"
-        echo # Add a newline after the command
+        echo # Add the necessary newline after fold
         echo -e "-------------------------------------"
-        echo "1. Launch Aider with this command"
-        echo "2. Back to Edit Format Selection" # Changed option 2
-        echo "0. Back to Main Menu (Mode Selection)" # Clarified option 0
+        echo "1. Launch Aider with this command (Default: Enter)" # Indicate Enter default
+        echo "2. Back to Edit Format Selection"
+        echo "0. Back to Main Menu (Mode Selection)"
         echo -e "-------------------------------------"
         echo -n "Enter choice [1=Launch, 2=Back to Format, 0=Back to Main, Enter=1]: " # Updated prompt
         read confirm_choice
