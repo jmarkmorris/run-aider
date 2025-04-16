@@ -13,8 +13,9 @@ Options:
 
 Description:
   The script guides you through selecting the operating mode (Code or Architect),
-  the LLM vendor (Google, Anthropic, OpenAI, Deepseek), and the specific model.
-  It manages API keys and prepares the final 'aider' command.
+  the LLM vendor (Google, Anthropic, OpenAI, Deepseek), the specific model,
+  and the desired edit format. It manages API keys and prepares the final
+  'aider' command.
 
 API Key Setup:
   API keys are required for the selected LLM vendor(s). They can be provided in
@@ -43,21 +44,21 @@ API Key Setup:
        # Ensure the file is not world-readable (chmod 600)
 
 Menu Flow:
-  - Select Mode: Choose between 'Code' (standard aider) or 'Architect' (uses
-    separate models for planning and editing).
-  - Select Vendor(s): Choose the LLM provider (e.g., OpenAI).
-  - Select Model(s): Choose the specific model (e.g., gpt-4o). In Architect
-    mode, you'll select models for both the Architect and Editor roles.
+  - Select Mode: Choose between 'Code' or 'Architect'.
+  - Select Vendor(s): Choose the LLM provider.
+  - Select Model(s): Choose the specific model. In Architect mode, select for
+    both Architect and Editor roles.
+  - Select Edit Format: Choose the desired edit format (e.g., 'whole', 'diff',
+    'editor-whole', 'editor-diff-fenced').
 
 Pre-Launch Confirmation:
   Before running 'aider', the script will display:
+  - The selected mode, models, and edit format.
   - The exact 'aider' command that will be executed.
-  - The currently selected edit format (e.g., 'whole', 'editor-diff').
   You will then have options to:
-  - Launch 'aider' with the displayed command and format.
-  - Switch to the alternative edit format ('diff'/'whole' or
-    'editor-diff'/'editor-whole') before launching.
-  - Go back to the main menu to change selections.
+  - Launch 'aider'.
+  - Go back to the Edit Format selection menu.
+  - Go back to the main menu (Mode selection).
 
 Running Aider:
   The script executes 'aider' with common options like '--vim', '--no-auto-commit',
@@ -123,15 +124,23 @@ VENDOR_KEY_SOURCE=() # Initialize as empty
 
 # --- Edit Format Definitions ---
 # Define the specific format strings to use
-CODE_DIFF_FORMAT="diff"
-CODE_WHOLE_FORMAT="whole"
-ARCHITECT_DIFF_FORMAT="editor-diff" # Diff-based format for Architect mode
-ARCHITECT_WHOLE_FORMAT="editor-whole" # Whole-based format for Architect mode
+CODE_EDIT_FORMATS=(
+    "whole"
+    "diff"
+    "search_replace"
+    # "line" # Consider adding later if needed
+)
+ARCHITECT_EDIT_FORMATS=(
+    "editor-whole"
+    "editor-diff"
+    "editor-diff-fenced" # Added new format
+)
 
 # Define the INITIAL default format to use when the script starts
 # Set these to your preferred defaults
-INITIAL_CODE_FORMAT=$CODE_WHOLE_FORMAT # Or $CODE_DIFF_FORMAT
-INITIAL_ARCHITECT_FORMAT=$ARCHITECT_WHOLE_FORMAT # Or $ARCHITECT_DIFF_FORMAT
+# REMOVED: These are no longer needed as format is selected explicitly
+# INITIAL_CODE_FORMAT=$CODE_WHOLE_FORMAT # Or $CODE_DIFF_FORMAT
+# INITIAL_ARCHITECT_FORMAT=$ARCHITECT_WHOLE_FORMAT # Or $ARCHITECT_DIFF_FORMAT
 
 # --- API Key Loading Helper Functions ---
 
@@ -415,6 +424,73 @@ select_entity() {
     return 0
 }
 
+# Selects the Aider edit format via an interactive menu.
+#
+# Args:
+#   $1: mode - The current operating mode ("code" or "architect").
+#
+# Outputs:
+#   - Prints menu options to stdout.
+#   - Reads user choice from stdin.
+#   - Prints error messages to stderr for invalid input.
+#
+# Modifies:
+#   - Sets the global variable SELECT_EDIT_FORMAT_RESULT to:
+#     - The selected format string (e.g., "whole", "editor-diff").
+#     - An empty string "" if the user chooses "Back".
+#     - "invalid" if the user enters an invalid choice.
+select_edit_format() {
+    local mode=$1
+    local formats=()
+    local num_formats
+    local choice i
+    local capitalized_mode
+
+    # Determine which set of formats to offer based on the mode
+    if [[ "$mode" == "code" ]]; then
+        formats=("${CODE_EDIT_FORMATS[@]}")
+        capitalized_mode="Code"
+    elif [[ "$mode" == "architect" ]]; then
+        formats=("${ARCHITECT_EDIT_FORMATS[@]}")
+        capitalized_mode="Architect"
+    else
+        echo "Error: Invalid mode passed to select_edit_format: $mode" >&2
+        SELECT_EDIT_FORMAT_RESULT="invalid"
+        return 1
+    fi
+
+    num_formats=${#formats[@]}
+
+    clear
+    # Use portable capitalization method
+    # capitalized_mode=$(echo "${mode:0:1}" | tr '[:lower:]' '[:upper:]')${mode:1}
+    echo -e "Select Edit Format for ${capitalized_mode} Mode:"
+    echo -e "====================================="
+
+    # Display format options
+    for ((i=0; i<num_formats; i++)); do
+        printf "%d. %s\n" "$((i + 1))" "${formats[$i]}"
+    done
+    echo "0. Back"
+    echo -e "====================================="
+    echo -n "Enter your choice [1-${num_formats}, Enter=0]: "
+    read choice
+
+    SELECT_EDIT_FORMAT_RESULT="" # Reset global variable
+
+    if [[ -z "$choice" || "$choice" == "0" ]]; then
+        SELECT_EDIT_FORMAT_RESULT=""  # "Back" selected
+    elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= num_formats )); then
+        SELECT_EDIT_FORMAT_RESULT="${formats[$((choice - 1))]}" # Set to chosen format string
+    else
+        echo "Invalid choice." >&2
+        read -p "Press Enter..."
+        SELECT_EDIT_FORMAT_RESULT="invalid"  # Indicate invalid input
+    fi
+
+    return 0 # Success
+}
+
 
 # Checks if the API key for the specified vendor is available as an environment variable.
 # It relies on load_api_keys having been called previously to load keys from files into env vars if necessary.
@@ -661,7 +737,8 @@ _build_code_args() {
 
 
 # Constructs and executes the final aider command based on the selected mode and models.
-# Includes a pre-launch confirmation step allowing the user to switch the edit format.
+# Includes a pre-launch confirmation step with options to launch, go back to format selection,
+# or go back to the main menu.
 #
 # Args:
 #   $1: mode - The operating mode ("code" or "architect").
@@ -669,20 +746,23 @@ _build_code_args() {
 #   $3: main_model - The selected main model.
 #   $4: editor_vendor - The selected editor vendor (used only in architect mode, can be "default").
 #   $5: editor_model - The selected editor model (used only in architect mode, can be "default").
+#   $6: selected_format - The chosen edit format string (e.g., "whole", "editor-diff").
 #
 # Outputs:
 #   - Prints status messages, the pre-launch menu, and the final command to stdout before execution.
-#   - Executes the aider command.
+#   - Executes the aider command if chosen.
 #   - Prints error messages to stderr if aider is not found or if the command fails.
 # Returns:
-#   - 1 if the aider command is not found or if the user chooses to go back.
-#   - The exit status of the aider command itself otherwise.
+#   - 0: Aider launched and exited successfully.
+#   - 1: User chose "Back to Main Menu" OR Aider command not found OR Aider failed.
+#   - 2: User chose "Back to Edit Format Selection".
 launch_aider() {
     local mode=$1
     local main_vendor=$2
     local main_model=$3
     local editor_vendor=$4
     local editor_model=$5
+    local selected_format=$6 # New argument for the chosen format
 
     local main_api_key_var="${main_vendor}_API_KEY"
     local main_api_key="${!main_api_key_var}" # Get key value using indirect expansion
@@ -704,24 +784,18 @@ launch_aider() {
     local mode_args_array=()
     local mode_display_name=""
     local editor_display_info=""
-    local actual_format=""
-    local alternative_format=""
-    local format_constant_base="" # Will be CODE or ARCHITECT
+    # REMOVED: actual_format, alternative_format, format_constant_base
+    # The format is now passed in as $selected_format
 
-    # Determine initial format and mode-specific args
+    # Determine mode-specific args
     if [ "$mode" == "architect" ]; then
         mode_display_name="Architect Mode"
-        format_constant_base="ARCHITECT"
-        actual_format="$INITIAL_ARCHITECT_FORMAT" # Set initial format
-
         # Retrieve editor API key value ONLY if editor vendor is different and not default
-        # This value is needed by _build_architect_args if the source is 'file'
         if [[ "$editor_vendor" != "$main_vendor" && "$editor_vendor" != "default" && -n "$editor_vendor" ]]; then
              editor_api_key_var="${editor_vendor}_API_KEY"
              editor_api_key="${!editor_api_key_var}" # Get key value using indirect expansion
         fi
         # Get architect-specific args (without edit format)
-        # Pass the potentially needed editor_api_key value
         mode_args_str=$(_build_architect_args "$editor_vendor" "$editor_model" "$editor_api_key" "$main_vendor")
         if [ $? -ne 0 ]; then return 1; fi # Exit if helper failed
 
@@ -733,20 +807,18 @@ launch_aider() {
         fi
     else # Code mode
         mode_display_name="Code Mode"
-        format_constant_base="CODE"
-        actual_format="$INITIAL_CODE_FORMAT" # Set initial format
         # Get code-specific args (without edit format)
         mode_args_str=$(_build_code_args)
         if [ $? -ne 0 ]; then return 1; fi # Exit if helper failed
         editor_display_info="" # No editor in code mode
     fi
 
-    # Capture mode args using a while read loop and here-string                                                                                   
-    local mode_args_array=()                                                                                                                      
-    while IFS= read -r arg; do                                                                                                                    
-        # Ensure we don't add empty strings if mode_args_str was empty or had blank lines                                                         
-        [[ -n "$arg" ]] && mode_args_array+=("$arg")                                                                                              
-    done <<< "$mode_args_str"                                                                                                                     
+    # Capture mode args using a while read loop and here-string
+    local mode_args_array=()
+    while IFS= read -r arg; do
+        # Ensure we don't add empty strings if mode_args_str was empty or had blank lines
+        [[ -n "$arg" ]] && mode_args_array+=("$arg")
+    done <<< "$mode_args_str"
     cmd_array+=("${mode_args_array[@]}")
 
     # Check if aider command exists before entering the loop
@@ -754,34 +826,20 @@ launch_aider() {
         echo -e "\nError: Aider command not found." >&2
         echo -e "Please ensure 'aider-chat' is installed and in your PATH." >&2
         read -p "Press Enter to return to the main menu..."
-        return 1 # Indicate error/abort
+        return 1 # Indicate error/abort -> Back to Main Menu
     fi
 
     # Pre-launch confirmation loop
     while true; do
-        # --- Determine the alternative format for the menu ---
-        local diff_format_var="${format_constant_base}_DIFF_FORMAT"
-        local whole_format_var="${format_constant_base}_WHOLE_FORMAT"
-        local diff_format="${!diff_format_var}"
-        local whole_format="${!whole_format_var}"
-
-        if [[ "$actual_format" == "$diff_format" ]]; then
-            alternative_format="$whole_format"
-        else
-            alternative_format="$diff_format"
-        fi
-
-        # --- Build the full command array *for the current format* ---
-        # We need to rebuild the array if the format changes
+        # --- Build the full command array *including the selected format* ---
         local current_cmd_array=("${cmd_array[@]}") # Copy base + main + mode args
-        current_cmd_array+=("--edit-format" "$actual_format") # Add current format
+        current_cmd_array+=("--edit-format" "$selected_format") # Add selected format
 
         # --- Display the pre-launch menu ---
         clear
         echo -e "Launching Aider: ${mode_display_name}"
         echo -e "Main Model:      ${main_vendor}/${main_model}${editor_display_info}"
-        echo -e "-------------------------------------"
-        echo -e "Current Edit Format: ${actual_format}"
+        echo -e "Edit Format:     ${selected_format}" # Display the chosen format
         echo -e "-------------------------------------"
         echo -e "Command to Run:"
         # Print the command array elements, quoted for safety/clarity, and wrap
@@ -789,10 +847,10 @@ launch_aider() {
         echo # Add a newline after the command
         echo -e "-------------------------------------"
         echo "1. Launch Aider with this command"
-        echo "2. Switch to Format: ${alternative_format}"
-        echo "3. Back to Main Menu (Abort Launch)"
+        echo "2. Back to Edit Format Selection" # Changed option 2
+        echo "0. Back to Main Menu (Mode Selection)" # Clarified option 0
         echo -e "-------------------------------------"
-        echo -n "Enter choice [1-3, 0=Back, Enter=1]: "
+        echo -n "Enter choice [1=Launch, 2=Back to Format, 0=Back to Main, Enter=1]: " # Updated prompt
         read confirm_choice
 
         # --- Handle user choice ---
@@ -805,17 +863,16 @@ launch_aider() {
                 if [ $exit_status -ne 0 ]; then
                     echo "Error: aider command failed with exit status $exit_status." >&2
                     read -p "Press Enter to return to the main menu..."
+                    return 1 # Indicate failure -> Back to Main Menu
                 fi
-                # Whether success or failure, return to main menu after execution attempt
-                return $exit_status # Return aider exit status or 0 if successful
+                # Aider ran successfully
+                return 0 # Indicate success -> Back to Main Menu
                 ;;
-            2)  # Switch format
-                actual_format="$alternative_format"
-                # Loop continues, will rebuild command array and redisplay
-                continue
+            2)  # Back to Edit Format Selection
+                return 2 # Return specific code for back to format
                 ;;
-            3|0)  # Back to Main Menu (Accepts 3 or 0)
-                return 1 # Use 1 to indicate user aborted, distinct from aider exit code 0
+            0)  # Back to Main Menu
+                return 1 # Use 1 to indicate user aborted to main menu
                 ;;
             *)  # Invalid choice
                 echo "Invalid choice. Press Enter to try again..." >&2
@@ -896,43 +953,63 @@ main() {
 run_code_mode() {
     local main_vendor=""
     local main_model=""
+    local selected_format="" # Variable to hold the chosen format
+    local launch_status # Variable to hold launch_aider return status
 
-    # Removed local selection variable
-
-    # Single loop to manage vendor and model selection state
+    # Loop for Vendor Selection
     while true; do
-        # Step 1: Select Vendor (if not already selected)
-        if [ -z "$main_vendor" ]; then
-            select_entity "vendor" "Code" # Sets SELECT_ENTITY_RESULT
-            if [[ "$SELECT_ENTITY_RESULT" == "invalid" ]]; then
-                continue # Loop back to re-select vendor
-            elif [[ -z "$SELECT_ENTITY_RESULT" ]]; then
-                # User selected "Back" from vendor selection (empty string)
-                return # Return to main menu
-            fi
-            # Vendor selected successfully
-            main_vendor="$SELECT_ENTITY_RESULT"
-            check_api_key "$main_vendor" # Verify the key is loaded and source is known
-            # Continue within the same loop iteration to select model
+        select_entity "vendor" "Code" # Sets SELECT_ENTITY_RESULT
+        if [[ "$SELECT_ENTITY_RESULT" == "invalid" ]]; then
+            continue # Re-prompt for vendor
+        elif [[ -z "$SELECT_ENTITY_RESULT" ]]; then
+            return # Back to main menu
         fi
+        main_vendor="$SELECT_ENTITY_RESULT"
+        check_api_key "$main_vendor" # Verify key
+        break # Vendor selected, exit loop
+    done
 
-        # Step 2: Select Model (requires vendor to be selected)
+    # Loop for Model Selection
+    while true; do
         select_entity "model" "Code" "$main_vendor" # Sets SELECT_ENTITY_RESULT
         if [[ "$SELECT_ENTITY_RESULT" == "invalid" ]]; then
-            continue # Loop back to re-select model (vendor remains selected)
+            continue # Re-prompt for model
         elif [[ -z "$SELECT_ENTITY_RESULT" ]]; then
-            # User selected "Back" from model selection (empty string)
-            main_vendor="" # Clear vendor selection
-            continue      # Loop back, will prompt for vendor again
+            # Back selected, need to re-select vendor
+            # A simpler approach is just to return.
+            return # Back to main menu (will require re-selecting vendor)
         fi
-        # Model selected successfully
         main_model="$SELECT_ENTITY_RESULT"
+        break # Model selected, exit loop
+    done
+
+    # Loop for Edit Format Selection and Launch Confirmation
+    while true; do
+        # Select Edit Format
+        select_edit_format "code" # Sets SELECT_EDIT_FORMAT_RESULT
+        if [[ "$SELECT_EDIT_FORMAT_RESULT" == "invalid" ]]; then
+            continue # Re-prompt for format
+        elif [[ -z "$SELECT_EDIT_FORMAT_RESULT" ]]; then
+            # Back selected, need to re-select model
+            # A simpler approach is just to return.
+            return # Back to main menu (will require re-selecting model)
+        fi
+        selected_format="$SELECT_EDIT_FORMAT_RESULT"
 
         # Launch aider (which now includes the confirmation menu)
-        # launch_aider returns 0 on successful execution, non-zero on error or user abort (Back)
-        launch_aider "code" "$main_vendor" "$main_model" "" ""
-        # Regardless of launch_aider return status, we go back to the main menu
-        return
+        launch_aider "code" "$main_vendor" "$main_model" "" "" "$selected_format"
+        launch_status=$? # Capture return status
+
+        # Check launch_status to decide next action
+        if [[ "$launch_status" -eq 2 ]]; then
+            # User chose "Back to Edit Format Selection" from launch_aider
+            continue # Continue the format selection loop
+        else
+            # User launched (status 0), chose "Back to Main Menu" (status 1),
+            # or an error occurred in launch_aider (status 1).
+            # In all these cases, return to the main menu.
+            return
+        fi
     done
 }
 # Handles the user interaction flow for selecting the main vendor/model and
@@ -955,6 +1032,8 @@ run_architect_mode() {
     local main_model=""
     local editor_vendor=""
     local editor_model=""
+    local selected_format="" # Variable to hold the chosen format
+    local launch_status # Variable to hold launch_aider return status
 
     # Step 1: Select Main Vendor
     while true; do
@@ -975,7 +1054,7 @@ run_architect_mode() {
         if [[ "$SELECT_ENTITY_RESULT" == "invalid" ]]; then
             continue # Re-prompt for main model
         elif [[ -z "$SELECT_ENTITY_RESULT" ]]; then
-             # Back selected, return to main menu (clearing vendor is not needed as function returns)
+             # Back selected, return to main menu
             return
         fi
         main_model="$SELECT_ENTITY_RESULT"
@@ -1014,12 +1093,33 @@ run_architect_mode() {
         done
     fi
 
-    # Step 5: Launch Aider
-    # launch_aider returns 0 on successful execution, non-zero on error or user abort (Back)
-    launch_aider "architect" "$main_vendor" "$main_model" "$editor_vendor" "$editor_model"
+    # Step 5: Loop for Edit Format Selection and Launch Confirmation
+    while true; do
+        # Select Edit Format
+        select_edit_format "architect" # Sets SELECT_EDIT_FORMAT_RESULT
+        if [[ "$SELECT_EDIT_FORMAT_RESULT" == "invalid" ]]; then
+            continue # Re-prompt for format
+        elif [[ -z "$SELECT_EDIT_FORMAT_RESULT" ]]; then
+            # Back selected, return to main menu (as per plan)
+            return
+        fi
+        selected_format="$SELECT_EDIT_FORMAT_RESULT"
 
-    # Regardless of launch_aider's return status, we go back to the main menu
-    return
+        # Launch Aider
+        launch_aider "architect" "$main_vendor" "$main_model" "$editor_vendor" "$editor_model" "$selected_format"
+        launch_status=$? # Capture return status
+
+        # Check launch_status to decide next action
+        if [[ "$launch_status" -eq 2 ]]; then
+            # User chose "Back to Edit Format Selection" from launch_aider
+            continue # Continue the format selection loop
+        else
+            # User launched (status 0), chose "Back to Main Menu" (status 1),
+            # or an error occurred in launch_aider (status 1).
+            # In all these cases, return to the main menu.
+            return
+        fi
+    done
 }
 
 # Run the main function

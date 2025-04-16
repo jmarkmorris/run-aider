@@ -3,7 +3,7 @@ Your customizable agentic Ai coding launcher
 
 ## Overview
 
-- run-aider.sh is an extensible bash script designed to empower developers to create their personalized AI coding workflow tool. 
+- run-aider.sh is an extensible bash script designed to empower developers to create their personalized AI coding workflow tool.
 - It provides a flexible, menu-driven interface for configuring and launching Aider with Large Language Models (LLMs).
 
 ## Philosophy
@@ -21,10 +21,11 @@ This tool is intentionally designed for continuous personal evolution. You and y
 - **Architect Mode:** A coding collaboration with one agent assigned to coding and another agent assigned to editing.
 
 ### Flexible Configuration
-- Interactive model and vendor selection
-- Dynamic edit format switching
-- Secure API management
-- Contextual AI interaction
+- Interactive mode selection (Code/Architect)
+- Interactive vendor and model selection for each role
+- **Dedicated menu for selecting Aider edit format** (overrides Aider defaults)
+- Secure API management (Environment variables or local file)
+- Contextual AI interaction (auto-includes `README-prompts.md` and `README-ask.md`)
 
 **Customization:** Easily add new vendors and models by modifying the script's model arrays.
 
@@ -32,7 +33,7 @@ This tool is intentionally designed for continuous personal evolution. You and y
 
 ### Prerequisites
 - Bash shell
-- [Aider-Chat](https://aider.chat)
+- [Aider-Chat](https://aider.chat) installed (`python -m pip install aider-install && aider-install`)
 - API keys for desired LLM providers
 
 ### Installation
@@ -54,11 +55,12 @@ chmod +x run-aider.sh
 ## Customization
 
 **Vendor and Model Changes**
-   - Edit `run-aider.sh` to add new vendors and models
+   - Edit `run-aider.sh` to add new vendors and models to the respective arrays (e.g., `GOOGLE_MODELS`, `VENDORS`).
 
 ## Documentation
 - Interactive help: `./run-aider.sh -h`
 - Detailed documentation: `README.md`
+- Aider-specific features and formats: `README-aider.md`
 
 ## License
 
@@ -71,7 +73,7 @@ MIT License - See `LICENSE` for details.
 These example interactions showcase the tool's interactive menu system, demonstrating:
 - Mode selection (Code vs. Architect)
 - Vendor and model selection
-- Edit format switching
+- **Dedicated edit format selection step**
 - Command preview before launch
 
 ### Code Mode Selection
@@ -84,7 +86,7 @@ Step 1: Select Aider Operating Mode
 2. Architect Mode
 0. Exit
 =====================================
-Enter your choice [1-2, Enter=0]:1
+Enter your choice [1-2, Enter=0]: 1
 
 
 Select Code VENDOR:
@@ -95,39 +97,59 @@ Select Code VENDOR:
 4. DEEPSEEK
 0. Back
 =====================================
-Enter your choice [1-4, Enter=0]:1
+Enter your choice [1-4, Enter=0]: 3
 
 
 Select Code MODEL:
 =====================================
-1. gemini/gemini-2.5-pro-exp-03-25
-2. gemini/gemini-2.5-pro-preview-03-25
-3. gemini/gemini-2.0-flash-exp
-4. gemini/gemini-2.0-flash
+1. chatgpt-4o-latest
+2. gpt-4.5-preview
+3. openai/o3-mini
+4. gpt-4o
+5. gpt-4-turbo
 0. Back
 =====================================
-Enter your choice [1-4, Enter=0]:1
+Enter your choice [1-5, Enter=0]: 4
+
+
+Select Edit Format for Code Mode:
+=====================================
+1. whole
+2. diff
+3. search_replace
+0. Back
+=====================================
+Enter your choice [1-3, Enter=0]: 1
 
 
 Launching Aider: Code Mode
-Main Model:      GOOGLE/gemini/gemini-2.5-pro-exp-03-25
--------------------------------------
-Current Edit Format: whole
+Main Model:      OPENAI/gpt-4o
+Edit Format:     whole
 -------------------------------------
 Command to Run:
-aider --vim --no-auto-commit --read README-prompts.md --read README-ask.md --model gemini/gemini-2.5-pro-exp-03-25 --chat-mode code --edit-format whole
+aider --vim --no-auto-commit --read README-prompts.md --read README-ask.md --model gpt-4o --chat-mode code --edit-format whole
 -------------------------------------
 1. Launch Aider with this command
-2. Switch to Format: diff
-3. Back to Main Menu (Abort Launch)
+2. Back to Main Menu (Abort Launch)
 -------------------------------------
-Enter choice [1-3, 0=Back, Enter=1]:
+Enter choice [1-2, 0=Back, Enter=1]:
 ```
 
 
 
 ### Architect Mode Selection
 ```
+Step 1: Select Aider Operating Mode
+=====================================
+             SELECT MODE
+=====================================
+1. Code Mode
+2. Architect Mode
+0. Exit
+=====================================
+Enter your choice [1-2, Enter=0]: 2
+
+
 Select Architect VENDOR:
 =====================================
 1. GOOGLE
@@ -136,7 +158,7 @@ Select Architect VENDOR:
 4. DEEPSEEK
 0. Back
 =====================================
-Enter your choice [1-4, Enter=0]:2
+Enter your choice [1-4, Enter=0]: 2
 
 
 Select Architect MODEL:
@@ -145,7 +167,7 @@ Select Architect MODEL:
 2. claude-3-5-haiku-20241022
 0. Back
 =====================================
-Enter your choice [1-2, Enter=0]:1
+Enter your choice [1-2, Enter=0]: 1
 
 
 Select Editor VENDOR:
@@ -157,7 +179,7 @@ Select Editor VENDOR:
 9. Use same VENDOR and MODEL as Architect
 0. Back
 =====================================
-Enter your choice [1-4, 9, Enter=0]:4
+Enter your choice [1-4, 9, Enter=0]: 4
 
 
 Select Editor MODEL:
@@ -168,20 +190,28 @@ Select Editor MODEL:
 4. deepseek/deepseek-chat
 0. Back
 =====================================
-Enter your choice [1-4, Enter=0]:1
+Enter your choice [1-4, Enter=0]: 1
+
+
+Select Edit Format for Architect Mode:
+=====================================
+1. editor-whole
+2. editor-diff
+3. editor-diff-fenced
+0. Back
+=====================================
+Enter your choice [1-3, Enter=0]: 3
 
 
 Launching Aider: Architect Mode
 Main Model:      ANTHROPIC/claude-3-7-sonnet-20250219 (Editor: DEEPSEEK/deepseek/deepseek-coder)
--------------------------------------
-Current Edit Format: editor-whole
+Edit Format:     editor-diff-fenced
 -------------------------------------
 Command to Run:
-aider --vim --no-auto-commit --read README-prompts.md --read README-ask.md --model claude-3-7-sonnet-20250219 --architect --editor-model deepseek/deepseek-coder --edit-format editor-whole
+aider --vim --no-auto-commit --read README-prompts.md --read README-ask.md --model claude-3-7-sonnet-20250219 --architect --editor-model deepseek/deepseek-coder --edit-format editor-diff-fenced
 -------------------------------------
 1. Launch Aider with this command
-2. Switch to Format: editor-diff
-3. Back to Main Menu (Abort Launch)
+2. Back to Main Menu (Abort Launch)
 -------------------------------------
 Enter choice [1-3, 0=Back, Enter=1]:
 ```
