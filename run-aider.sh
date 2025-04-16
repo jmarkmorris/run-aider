@@ -136,11 +136,20 @@ ARCHITECT_EDIT_FORMATS=(
     "editor-diff-fenced" # Added new format
 )
 
-# Define the INITIAL default format to use when the script starts
-# Set these to your preferred defaults
-# REMOVED: These are no longer needed as format is selected explicitly
-# INITIAL_CODE_FORMAT=$CODE_WHOLE_FORMAT # Or $CODE_DIFF_FORMAT
-# INITIAL_ARCHITECT_FORMAT=$ARCHITECT_WHOLE_FORMAT # Or $ARCHITECT_DIFF_FORMAT
+# --- Centered Menu Titles (Static) ---
+# Calculated for a 40-character width
+TITLE_MODE_SELECT="     SELECT AIDER OPERATING MODE      "
+TITLE_CODE_VENDOR="        SELECT CODE MODE VENDOR         "
+TITLE_CODE_MODEL="         SELECT CODE MODE MODEL          "
+TITLE_ARCH_VENDOR="      SELECT ARCHITECT MODE VENDOR      "
+TITLE_ARCH_MODEL="       SELECT ARCHITECT MODE MODEL       "
+TITLE_EDITOR_VENDOR="         SELECT EDITOR VENDOR          "
+TITLE_EDITOR_MODEL="          SELECT EDITOR MODEL           "
+TITLE_CODE_FORMAT="      SELECT CODE MODE EDIT FORMAT      "
+TITLE_ARCH_FORMAT="    SELECT ARCHITECT MODE EDIT FORMAT   "
+TITLE_LAUNCH_CODE="      LAUNCHING AIDER: CODE MODE       "
+TITLE_LAUNCH_ARCH="    LAUNCHING AIDER: ARCHITECT MODE    "
+
 
 # --- API Key Loading Helper Functions ---
 
@@ -358,16 +367,18 @@ select_entity() {
     local entities=()    # Use a regular array instead of nameref
     local num_entities
     local choice i         # Added 'i' for loop counter
-    local upper_entity_type
-    local upper_role_label
-    local menu_title
-    local total_width=40 # Width of the separator line
-    local title_length
-    local left_padding
-    local right_padding
+    local menu_title=""    # Initialize menu title
 
     if [[ "$entity_type" == "vendor" ]]; then
         entities=("${VENDORS[@]}")
+        # Select appropriate pre-formatted title
+        if [[ "$role_label" == "Code" ]]; then
+            menu_title="$TITLE_CODE_VENDOR"
+        elif [[ "$role_label" == "Architect" ]]; then
+            menu_title="$TITLE_ARCH_VENDOR"
+        elif [[ "$role_label" == "Editor" ]]; then
+            menu_title="$TITLE_EDITOR_VENDOR"
+        fi
     elif [[ "$entity_type" == "model" ]]; then
         local vendor=$3 # Assign vendor here, only when needed for models
         # Use indirect expansion to dynamically get the correct model array elements
@@ -379,10 +390,16 @@ select_entity() {
             entities=("${!models_array_ref}")
         else
             echo "Error: Model array variable not found for vendor: $vendor" >&2
-            # Set result to invalid to prevent proceeding? Or return error code?
-            # Let's stick with the global variable pattern for now.
             SELECT_ENTITY_RESULT="invalid"
             return 1 # Return error
+        fi
+        # Select appropriate pre-formatted title
+        if [[ "$role_label" == "Code" ]]; then
+            menu_title="$TITLE_CODE_MODEL"
+        elif [[ "$role_label" == "Architect" ]]; then
+            menu_title="$TITLE_ARCH_MODEL"
+        elif [[ "$role_label" == "Editor" ]]; then
+            menu_title="$TITLE_EDITOR_MODEL"
         fi
     else
         echo "Error: Invalid entity type: $entity_type" >&2
@@ -390,31 +407,17 @@ select_entity() {
         return 1
     fi
 
+    # Fallback title if something went wrong
+    if [[ -z "$menu_title" ]]; then
+        menu_title="         SELECT ${role_label^^} ${entity_type^^}         " # Generic fallback
+    fi
+
     num_entities=${#entities[@]}
 
     clear
-    # Use tr for portable uppercase conversion
-    upper_entity_type=$(echo "$entity_type" | tr '[:lower:]' '[:upper:]')
-    upper_role_label=$(echo "$role_label" | tr '[:lower:]' '[:upper:]')
-
-    # Construct title based on role
-    if [[ "$role_label" == "Code" || "$role_label" == "Architect" ]]; then
-        menu_title="SELECT ${upper_role_label} MODE ${upper_entity_type}"
-    else # Editor role
-        menu_title="SELECT ${upper_role_label} ${upper_entity_type}"
-    fi
-
-    # Calculate padding for centering
-    title_length=${#menu_title}
-    left_padding=$(( (total_width - title_length) / 2 ))
-    right_padding=$(( total_width - title_length - left_padding ))
-    # Ensure padding isn't negative
-    [[ $left_padding -lt 0 ]] && left_padding=0
-    [[ $right_padding -lt 0 ]] && right_padding=0
-
-    # Display menu
+    # Display menu using pre-formatted title
     echo -e "====================================="
-    printf "%*s%s%*s\n" $left_padding "" "$menu_title" $right_padding ""
+    echo "$menu_title"
     echo -e "====================================="
 
     # Use C-style for loop for better compatibility
@@ -470,20 +473,15 @@ select_edit_format() {
     local formats=()
     local num_formats
     local choice i
-    local capitalized_mode
-    local menu_title
-    local total_width=40 # Width of the separator line
-    local title_length
-    local left_padding
-    local right_padding
+    local menu_title="" # Initialize menu title
 
     # Determine which set of formats to offer based on the mode
     if [[ "$mode" == "code" ]]; then
         formats=("${CODE_EDIT_FORMATS[@]}")
-        capitalized_mode="Code"
+        menu_title="$TITLE_CODE_FORMAT"
     elif [[ "$mode" == "architect" ]]; then
         formats=("${ARCHITECT_EDIT_FORMATS[@]}")
-        capitalized_mode="Architect"
+        menu_title="$TITLE_ARCH_FORMAT"
     else
         echo "Error: Invalid mode passed to select_edit_format: $mode" >&2
         SELECT_EDIT_FORMAT_RESULT="invalid"
@@ -491,20 +489,11 @@ select_edit_format() {
     fi
 
     num_formats=${#formats[@]}
-    # Construct title using uppercase mode name
-    menu_title="SELECT $(echo "$capitalized_mode" | tr '[:lower:]' '[:upper:]') MODE EDIT FORMAT"
-
-    # Calculate padding for centering
-    title_length=${#menu_title}
-    left_padding=$(( (total_width - title_length) / 2 ))
-    right_padding=$(( total_width - title_length - left_padding ))
-    # Ensure padding isn't negative
-    [[ $left_padding -lt 0 ]] && left_padding=0
-    [[ $right_padding -lt 0 ]] && right_padding=0
 
     clear
+    # Display menu using pre-formatted title
     echo -e "====================================="
-    printf "%*s%s%*s\n" $left_padding "" "$menu_title" $right_padding ""
+    echo "$menu_title"
     echo -e "====================================="
 
     # Display format options
@@ -592,17 +581,9 @@ check_api_key() {
 #   - Prints the menu options to stdout.
 display_mode_selection_menu() {
     clear
-    local menu_title="SELECT AIDER OPERATING MODE"
-    local total_width=40 # Width of the separator line
-    local title_length=${#menu_title}
-    local left_padding=$(( (total_width - title_length) / 2 ))
-    local right_padding=$(( total_width - title_length - left_padding ))
-    # Ensure padding isn't negative
-    [[ $left_padding -lt 0 ]] && left_padding=0
-    [[ $right_padding -lt 0 ]] && right_padding=0
-
+    # Display menu using pre-formatted title
     echo -e "====================================="
-    printf "%*s%s%*s\n" $left_padding "" "$menu_title" $right_padding ""
+    echo "$TITLE_MODE_SELECT"
     echo -e "====================================="
     echo "1. Code Mode"
     echo "2. Architect Mode"
@@ -832,12 +813,13 @@ launch_aider() {
     local mode_args_array=()
     local mode_display_name=""
     local editor_display_info=""
-    # REMOVED: actual_format, alternative_format, format_constant_base
-    # The format is now passed in as $selected_format
+    local launch_title="" # Initialize launch title
+    # REMOVED: Padding calculation variables
 
-    # Determine mode-specific args
+    # Determine mode-specific args and title
     if [ "$mode" == "architect" ]; then
         mode_display_name="Architect Mode"
+        launch_title="$TITLE_LAUNCH_ARCH"
         # Retrieve editor API key value ONLY if editor vendor is different and not default
         if [[ "$editor_vendor" != "$main_vendor" && "$editor_vendor" != "default" && -n "$editor_vendor" ]]; then
              editor_api_key_var="${editor_vendor}_API_KEY"
@@ -855,6 +837,7 @@ launch_aider() {
         fi
     else # Code mode
         mode_display_name="Code Mode"
+        launch_title="$TITLE_LAUNCH_CODE"
         # Get code-specific args (without edit format)
         mode_args_str=$(_build_code_args)
         if [ $? -ne 0 ]; then return 1; fi # Exit if helper failed
@@ -885,9 +868,11 @@ launch_aider() {
 
         # --- Display the pre-launch menu ---
         clear
-        echo -e "Launching Aider: ${mode_display_name}"
+        echo -e "====================================="
+        echo "$launch_title" # Use pre-formatted title
+        echo -e "====================================="
         echo -e "Main Model:      ${main_vendor}/${main_model}${editor_display_info}"
-        echo -e "Edit Format:     ${selected_format}" # Display the chosen format
+        echo -e "Edit Format:     ${selected_format}"
         echo -e "-------------------------------------"
         echo -e "Command to Run:"
         # Print the command array elements, quoted for safety/clarity, and wrap
