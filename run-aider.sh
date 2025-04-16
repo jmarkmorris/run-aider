@@ -812,13 +812,12 @@ launch_aider() {
     local mode_args_str
     local mode_args_array=()
     local mode_display_name=""
-    local editor_display_info=""
+    # local editor_display_info="" # No longer needed here
     local launch_title="" # Initialize launch title
-    # REMOVED: Padding calculation variables
 
     # Determine mode-specific args and title
     if [ "$mode" == "architect" ]; then
-        mode_display_name="Architect Mode"
+        mode_display_name="Architect Mode" # Keep for potential internal use
         launch_title="$TITLE_LAUNCH_ARCH"
         # Retrieve editor API key value ONLY if editor vendor is different and not default
         if [[ "$editor_vendor" != "$main_vendor" && "$editor_vendor" != "default" && -n "$editor_vendor" ]]; then
@@ -829,19 +828,14 @@ launch_aider() {
         mode_args_str=$(_build_architect_args "$editor_vendor" "$editor_model" "$editor_api_key" "$main_vendor")
         if [ $? -ne 0 ]; then return 1; fi # Exit if helper failed
 
-        # Set editor display info for the menu
-        if [[ "$editor_model" != "default" && -n "$editor_model" ]]; then
-            editor_display_info=" (Editor: $editor_vendor/$editor_model)"
-        else
-            editor_display_info=" (Editor: Default)"
-        fi
+        # Editor display info is handled directly in the menu display below
     else # Code mode
-        mode_display_name="Code Mode"
+        mode_display_name="Code Mode" # Keep for potential internal use
         launch_title="$TITLE_LAUNCH_CODE"
         # Get code-specific args (without edit format)
         mode_args_str=$(_build_code_args)
         if [ $? -ne 0 ]; then return 1; fi # Exit if helper failed
-        editor_display_info="" # No editor in code mode
+        # No editor display info needed for code mode
     fi
 
     # Capture mode args using a while read loop and here-string
@@ -871,10 +865,23 @@ launch_aider() {
         echo -e "====================================="
         echo "$launch_title" # Use pre-formatted title
         echo -e "====================================="
-        echo -e "Main Model:      ${main_vendor}/${main_model}${editor_display_info}"
+
+        # Display model info based on mode
+        if [ "$mode" == "architect" ]; then
+            echo -e "Architect Model: ${main_vendor}/${main_model}"
+            if [[ "$editor_model" != "default" && -n "$editor_model" ]]; then
+                echo -e "Editor Model:    ${editor_vendor}/${editor_model}"
+            else
+                echo -e "Editor Model:    Default"
+            fi
+        else # Code mode
+            echo -e "Main Model:      ${main_vendor}/${main_model}"
+        fi
+
         echo -e "Edit Format:     ${selected_format}"
         echo -e "-------------------------------------"
-        echo -e "Aider Launch Command\n"
+        # Add blank line before command title
+        echo -e "\nAIDER LAUNCH COMMAND\n"
         # Print the command array elements, quoted for safety/clarity, and wrap
         # Use printf "%q " to quote and add spaces, then pipe to fold, then echo for newline
         printf "%q " "${current_cmd_array[@]}" | fold -s -w "$(tput cols)"
