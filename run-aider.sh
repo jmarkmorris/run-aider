@@ -358,6 +358,13 @@ select_entity() {
     local entities=()    # Use a regular array instead of nameref
     local num_entities
     local choice i         # Added 'i' for loop counter
+    local upper_entity_type
+    local upper_role_label
+    local menu_title
+    local total_width=40 # Width of the separator line
+    local title_length
+    local left_padding
+    local right_padding
 
     if [[ "$entity_type" == "vendor" ]]; then
         entities=("${VENDORS[@]}")
@@ -386,9 +393,28 @@ select_entity() {
     num_entities=${#entities[@]}
 
     clear
-    local upper_entity_type
-    upper_entity_type=$(echo "$entity_type" | tr '[:lower:]' '[:upper:]') # More portable uppercase
-    echo -e "Select ${role_label} ${upper_entity_type}: "
+    # Use tr for portable uppercase conversion
+    upper_entity_type=$(echo "$entity_type" | tr '[:lower:]' '[:upper:]')
+    upper_role_label=$(echo "$role_label" | tr '[:lower:]' '[:upper:]')
+
+    # Construct title based on role
+    if [[ "$role_label" == "Code" || "$role_label" == "Architect" ]]; then
+        menu_title="SELECT ${upper_role_label} MODE ${upper_entity_type}"
+    else # Editor role
+        menu_title="SELECT ${upper_role_label} ${upper_entity_type}"
+    fi
+
+    # Calculate padding for centering
+    title_length=${#menu_title}
+    left_padding=$(( (total_width - title_length) / 2 ))
+    right_padding=$(( total_width - title_length - left_padding ))
+    # Ensure padding isn't negative
+    [[ $left_padding -lt 0 ]] && left_padding=0
+    [[ $right_padding -lt 0 ]] && right_padding=0
+
+    # Display menu
+    echo -e "====================================="
+    printf "%*s%s%*s\n" $left_padding "" "$menu_title" $right_padding ""
     echo -e "====================================="
 
     # Use C-style for loop for better compatibility
@@ -445,6 +471,11 @@ select_edit_format() {
     local num_formats
     local choice i
     local capitalized_mode
+    local menu_title
+    local total_width=40 # Width of the separator line
+    local title_length
+    local left_padding
+    local right_padding
 
     # Determine which set of formats to offer based on the mode
     if [[ "$mode" == "code" ]]; then
@@ -460,11 +491,20 @@ select_edit_format() {
     fi
 
     num_formats=${#formats[@]}
+    # Construct title using uppercase mode name
+    menu_title="SELECT $(echo "$capitalized_mode" | tr '[:lower:]' '[:upper:]') MODE EDIT FORMAT"
+
+    # Calculate padding for centering
+    title_length=${#menu_title}
+    left_padding=$(( (total_width - title_length) / 2 ))
+    right_padding=$(( total_width - title_length - left_padding ))
+    # Ensure padding isn't negative
+    [[ $left_padding -lt 0 ]] && left_padding=0
+    [[ $right_padding -lt 0 ]] && right_padding=0
 
     clear
-    # Use portable capitalization method
-    # capitalized_mode=$(echo "${mode:0:1}" | tr '[:lower:]' '[:upper:]')${mode:1}
-    echo -e "Select Edit Format for ${capitalized_mode} Mode:"
+    echo -e "====================================="
+    printf "%*s%s%*s\n" $left_padding "" "$menu_title" $right_padding ""
     echo -e "====================================="
 
     # Display format options
@@ -552,9 +592,17 @@ check_api_key() {
 #   - Prints the menu options to stdout.
 display_mode_selection_menu() {
     clear
-    echo -e "Step 1: Select Aider Operating Mode"
+    local menu_title="SELECT AIDER OPERATING MODE"
+    local total_width=40 # Width of the separator line
+    local title_length=${#menu_title}
+    local left_padding=$(( (total_width - title_length) / 2 ))
+    local right_padding=$(( total_width - title_length - left_padding ))
+    # Ensure padding isn't negative
+    [[ $left_padding -lt 0 ]] && left_padding=0
+    [[ $right_padding -lt 0 ]] && right_padding=0
+
     echo -e "====================================="
-    echo -e "             SELECT MODE             "
+    printf "%*s%s%*s\n" $left_padding "" "$menu_title" $right_padding ""
     echo -e "====================================="
     echo "1. Code Mode"
     echo "2. Architect Mode"
