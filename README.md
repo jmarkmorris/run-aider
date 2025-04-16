@@ -127,7 +127,7 @@ Main Model:      OPENAI/gpt-4o
 Edit Format:     whole
 -------------------------------------
 Command to Run:
-aider --vim --no-auto-commit --read README-prompts.md --read README-ask.md --model gpt-4o --chat-mode code --edit-format whole
+aider --vim --no-auto-commit --model gpt-4o --chat-mode code --edit-format whole
 -------------------------------------
 1. Launch Aider with this command
 2. Back to Main Menu (Abort Launch)
@@ -208,7 +208,7 @@ Main Model:      ANTHROPIC/claude-3-7-sonnet-20250219 (Editor: DEEPSEEK/deepseek
 Edit Format:     editor-diff-fenced
 -------------------------------------
 Command to Run:
-aider --vim --no-auto-commit --read README-prompts.md --read README-ask.md --model claude-3-7-sonnet-20250219 --architect --editor-model deepseek/deepseek-coder --edit-format editor-diff-fenced
+aider --vim --no-auto-commit --model claude-3-7-sonnet-20250219 --architect --editor-model deepseek/deepseek-coder --edit-format editor-diff-fenced
 -------------------------------------
 1. Launch Aider with this command
 2. Back to Main Menu (Abort Launch)
