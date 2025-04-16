@@ -137,18 +137,18 @@ ARCHITECT_EDIT_FORMATS=(
 )
 
 # --- Centered Menu Titles (Static) ---
-# Calculated for a 40-character width
-TITLE_MODE_SELECT="     SELECT AIDER OPERATING MODE      "
-TITLE_CODE_VENDOR="        SELECT CODE MODE VENDOR         "
-TITLE_CODE_MODEL="         SELECT CODE MODE MODEL          "
-TITLE_ARCH_VENDOR="      SELECT ARCHITECT MODE VENDOR      "
-TITLE_ARCH_MODEL="       SELECT ARCHITECT MODE MODEL       "
-TITLE_EDITOR_VENDOR="         SELECT EDITOR VENDOR          "
-TITLE_EDITOR_MODEL="          SELECT EDITOR MODEL           "
-TITLE_CODE_FORMAT="      SELECT CODE MODE EDIT FORMAT      "
-TITLE_ARCH_FORMAT="      SELECT ARCHITECT EDIT FORMAT      " # Updated title and centering
-TITLE_LAUNCH_CODE="      LAUNCHING AIDER: CODE MODE       "
-TITLE_LAUNCH_ARCH="    LAUNCHING AIDER: ARCHITECT MODE    "
+# Calculated for a 60-character width
+TITLE_MODE_SELECT="               SELECT AIDER OPERATING MODE                "
+TITLE_CODE_VENDOR="                 SELECT CODE MODE VENDOR                  "
+TITLE_CODE_MODEL="                  SELECT CODE MODE MODEL                   "
+TITLE_ARCH_VENDOR="               SELECT ARCHITECT MODE VENDOR               "
+TITLE_ARCH_MODEL="                SELECT ARCHITECT MODE MODEL                "
+TITLE_EDITOR_VENDOR="                  SELECT EDITOR VENDOR                   "
+TITLE_EDITOR_MODEL="                   SELECT EDITOR MODEL                    "
+TITLE_CODE_FORMAT="               SELECT CODE MODE EDIT FORMAT               "
+TITLE_ARCH_FORMAT="             SELECT ARCHITECT EDIT FORMAT               "
+TITLE_LAUNCH_CODE="               LAUNCHING AIDER: CODE MODE                "
+TITLE_LAUNCH_ARCH="             LAUNCHING AIDER: ARCHITECT MODE             "
 
 
 # --- API Key Loading Helper Functions ---
@@ -415,10 +415,10 @@ select_entity() {
     num_entities=${#entities[@]}
 
     clear
-    # Display menu using pre-formatted title
-    echo -e "====================================="
+    # Display menu using pre-formatted title and new separator length
+    echo -e "============================================================"
     echo "$menu_title"
-    echo -e "====================================="
+    echo -e "============================================================"
 
     # Use C-style for loop for better compatibility
     for ((i=0; i<num_entities; i++)); do
@@ -431,7 +431,7 @@ select_entity() {
         prompt_range="1-${num_entities}, 9"
     fi
     echo "0. Back"
-    echo -e "====================================="
+    echo -e "============================================================"
     echo -n "Enter your choice [${prompt_range}, Enter=0]: "
     read choice
 
@@ -491,17 +491,17 @@ select_edit_format() {
     num_formats=${#formats[@]}
 
     clear
-    # Display menu using pre-formatted title
-    echo -e "====================================="
+    # Display menu using pre-formatted title and new separator length
+    echo -e "============================================================"
     echo "$menu_title"
-    echo -e "====================================="
+    echo -e "============================================================"
 
     # Display format options
     for ((i=0; i<num_formats; i++)); do
         printf "%d. %s\n" "$((i + 1))" "${formats[$i]}"
     done
     echo "0. Back"
-    echo -e "====================================="
+    echo -e "============================================================"
     echo -n "Enter your choice [1-${num_formats}, Enter=0]: "
     read choice
 
@@ -581,14 +581,14 @@ check_api_key() {
 #   - Prints the menu options to stdout.
 display_mode_selection_menu() {
     clear
-    # Display menu using pre-formatted title
-    echo -e "====================================="
+    # Display menu using pre-formatted title and new separator length
+    echo -e "============================================================"
     echo "$TITLE_MODE_SELECT"
-    echo -e "====================================="
+    echo -e "============================================================"
     echo "1. Code Mode"
     echo "2. Architect Mode"
     echo "0. Exit"
-    echo -e "====================================="
+    echo -e "============================================================"
     echo -n "Enter your choice [1-2, Enter=0]: "
 }
 
@@ -862,9 +862,9 @@ launch_aider() {
 
         # --- Display the pre-launch menu ---
         clear
-        echo -e "====================================="
+        echo -e "============================================================"
         echo "$launch_title" # Use pre-formatted title
-        echo -e "====================================="
+        echo -e "============================================================"
 
         # Display model info based on mode
         if [ "$mode" == "architect" ]; then
@@ -879,18 +879,18 @@ launch_aider() {
         fi
 
         echo -e "Edit Format:     ${selected_format}"
-        echo -e "-------------------------------------"
+        echo -e "------------------------------------------------------------" # Use new separator length
         # Removed blank line before command title
         echo -e "AIDER LAUNCH COMMAND\n"
         # Print the command array elements, quoted for safety/clarity, and wrap
         # Use printf "%q " to quote and add spaces, then pipe to fold, then echo for newline
         printf "%q " "${current_cmd_array[@]}" | fold -s -w "$(tput cols)"
         echo # Add the necessary newline after fold
-        echo -e "-------------------------------------"
+        echo -e "------------------------------------------------------------" # Use new separator length
         echo "1. Launch Aider with this command (Default: Enter)" # Indicate Enter default
         echo "2. Back to Edit Format Selection"
         echo "0. Back to Main Menu (Mode Selection)"
-        echo -e "-------------------------------------"
+        echo -e "------------------------------------------------------------" # Use new separator length
         echo -n "Enter choice [1=Launch, 2=Back to Format, 0=Back to Main, Enter=1]: " # Updated prompt
         read confirm_choice
 
