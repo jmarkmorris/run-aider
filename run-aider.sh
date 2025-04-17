@@ -940,8 +940,10 @@ launch_aider() {
         # Ensure we don't add empty strings if output was empty or had blank lines
         [[ -n "$arg" ]] && read_args_array+=("$arg")
     done <<< "$read_args_output"
-    # Append read args to the command array
-    cmd_array+=("${read_args_array[@]}")
+    # Append read args to the command array only if the array is not empty
+    if [[ ${#read_args_array[@]} -gt 0 ]]; then
+        cmd_array+=("${read_args_array[@]}")
+    fi
     # --- End adding --read arguments ---
 
 
