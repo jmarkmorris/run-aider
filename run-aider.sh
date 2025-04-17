@@ -897,6 +897,15 @@ launch_aider() {
         printf "%q " "${current_cmd_array[@]}" | fold -s -w "$(tput cols)"
         echo # Add the necessary newline after fold
         echo -e "$SEPARATOR_SUB" # Use new separator length
+
+        # --- Show .aider.conf.yml if it exists in $HOME ---
+        if [[ -f "$HOME/.aider.conf.yml" ]]; then
+            echo -e "Detected: \$HOME/.aider.conf.yml"
+            echo -e "These additional settings will be applied by Aider:\n"
+            cat "$HOME/.aider.conf.yml"
+            echo -e "\n$SEPARATOR_SUB"
+        fi
+
         echo "1. Launch Aider with this command (Default: Enter)" # Indicate Enter default
         echo "2. Back to Edit Format Selection"
         echo "0. Back to Main Menu (Mode Selection)"
