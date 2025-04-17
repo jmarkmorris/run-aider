@@ -124,7 +124,6 @@ VENDOR_KEY_SOURCE=() # Initialize as empty
 CODE_EDIT_FORMATS=(
     "whole"
     "diff"
-    "search_replace"
     # "line" # Consider adding later if needed
 )
 ARCHITECT_EDIT_FORMATS=(
