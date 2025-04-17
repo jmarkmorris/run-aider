@@ -1,1 +1,1 @@
-/Users/markmorris/vibe/my-globals/README-prompts.md
+/Users/marmorri/vibe/my-globals/README-prompts.md
