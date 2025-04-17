@@ -60,10 +60,6 @@ Pre-Launch Confirmation:
   - Go back to the Edit Format selection menu.
   - Go back to the main menu (Mode selection).
 
-Running Aider:
-  The script executes 'aider' with common options like '--vim', '--no-auto-commit',
-  and automatically includes 'README-prompts.md' and 'README-ask.md'.
-
 Invocation:
   - To start the interactive menu: ./run-aider.sh
   - To display this help:      ./run-aider.sh -h  OR  ./run-aider.sh --help
