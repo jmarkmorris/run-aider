@@ -272,7 +272,11 @@ _load_keys_from_file() {
     for vendor_check in "${VENDORS[@]}"; do
         key_var_check="${vendor_check}_API_KEY"
         # Check the value *after* sourcing, using indirect expansion
-        key_val_check="${!key_var_check}"
+        if printenv "$key_var_check" >/dev/null 2>&1; then
+            key_val_check="${!key_var_check}"
+        else
+            key_val_check=""
+        fi
 
         # If source is still unset AND the variable now has a value, it came from the file
         if [[ "${VENDOR_KEY_SOURCE[$j]}" == "unset" && -n "$key_val_check" ]]; then
