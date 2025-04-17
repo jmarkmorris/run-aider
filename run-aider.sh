@@ -414,9 +414,9 @@ select_entity() {
 
     num_entities=${#entities[@]}
 
-    clear
+    # clear # Disabled for debugging
     # Display menu using pre-formatted title and new separator length
-    echo -e "$SEPARATOR_MAIN"
+    echo -e "\n$SEPARATOR_MAIN" # Add newline since clear is disabled
     echo "$menu_title"
     echo -e "$SEPARATOR_MAIN"
 
@@ -490,9 +490,9 @@ select_edit_format() {
 
     num_formats=${#formats[@]}
 
-    clear
+    # clear # Disabled for debugging
     # Display menu using pre-formatted title and new separator length
-    echo -e "$SEPARATOR_MAIN"
+    echo -e "\n$SEPARATOR_MAIN" # Add newline since clear is disabled
     echo "$menu_title"
     echo -e "$SEPARATOR_MAIN"
 
@@ -577,12 +577,11 @@ check_api_key() {
 # Args: None
 #
 # Outputs:
-#   - Clears the screen.
 #   - Prints the menu options to stdout.
 display_mode_selection_menu() {
-    clear
+    # clear # Disabled for debugging
     # Display menu using pre-formatted title and new separator length
-    echo -e "$SEPARATOR_MAIN"
+    echo -e "\n$SEPARATOR_MAIN" # Add newline since clear is disabled
     echo "$TITLE_MODE_SELECT"
     echo -e "$SEPARATOR_MAIN"
     echo "1. Code Mode"
@@ -657,8 +656,16 @@ _get_read_files_from_config() {
     # If no config file found, return successfully with no output
     if [[ -z "$config_file" ]]; then
         # echo "Debug: No .aider.conf.yml or .aider.conf.yaml found in search paths." >&2 # Optional debug
+        # echo "Debug: No .aider.conf.yml or .aider.conf.yaml found in search paths." >&2 # Optional debug
         return 0
     fi
+
+    # --- Debug: Print config file contents ---
+    echo "Debug: Found aider config file: $config_file" >&2
+    echo "--- Start Content of $config_file ---" >&2
+    cat "$config_file" >&2
+    echo "--- End Content of $config_file ---" >&2
+    # --- End Debug ---
 
     # Check if yq is installed
     if ! command -v yq &> /dev/null; then
@@ -1012,8 +1019,8 @@ launch_aider() {
         current_cmd_array+=("--edit-format" "$selected_format") # Add selected format
 
         # --- Display the pre-launch menu ---
-        clear
-        echo -e "$SEPARATOR_MAIN"
+        # clear # Disabled for debugging
+        echo -e "\n$SEPARATOR_MAIN" # Add newline since clear is disabled
         echo "$launch_title" # Use pre-formatted title
         echo -e "$SEPARATOR_MAIN"
 
