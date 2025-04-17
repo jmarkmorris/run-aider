@@ -25,7 +25,7 @@ This tool is intentionally designed for continuous personal evolution. You and y
 - Interactive vendor and model selection for each role
 - **Dedicated menu for selecting Aider edit format** (overrides Aider defaults)
 - Secure API management (Environment variables or local file)
-- Contextual AI interaction (auto-includes `README-prompts.md` and `README-ask.md`)
+- Configuration handled via `.aider.conf.yml` (e.g. `--vim`, `--read`, etc.)
 
 **Customization:** Easily add new vendors and models by modifying the script's model arrays.
 

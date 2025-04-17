@@ -929,29 +929,8 @@ launch_aider() {
     local editor_api_key_var=""
 
     # Base aider command parts in an array
-    local cmd_array=("aider" "--vim" "--no-auto-commit")
+    local cmd_array=("aider")
 
-    # --- Add --read arguments from config file ---
-    local read_args_array=()
-    local read_args_output
-    read_args_output=$(_build_read_args)
-    local build_read_status=$?
-
-    if [[ $build_read_status -ne 0 ]]; then
-        # Error message already printed by helper functions
-        read -p "Press Enter to return to the main menu..."
-        return 1 # Indicate failure -> Back to Main Menu
-    fi
-    # Read the output into the array
-    while IFS= read -r arg; do
-        # Ensure we don't add empty strings if output was empty or had blank lines
-        [[ -n "$arg" ]] && read_args_array+=("$arg")
-    done <<< "$read_args_output"
-    # Append read args to the command array only if the array is not empty
-    if [[ ${#read_args_array[@]} -gt 0 ]]; then
-        cmd_array+=("${read_args_array[@]}")
-    fi
-    # --- End adding --read arguments ---
 
 
     # --- Add main model arguments ---

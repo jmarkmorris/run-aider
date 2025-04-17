@@ -19,7 +19,7 @@ The `runaider.sh` script provides an interactive command-line interface to confi
 - Guiding you through selecting the LLM vendor (OpenAI, Anthropic, Google, Deepseek) and specific model for each role (Code, Architect, Editor).
 - Managing API keys securely (loading from environment or files).
 - **Providing a dedicated menu step to select the Aider edit format** (`whole`, `diff`, `search_replace` for Code mode; `editor-whole`, `editor-diff`, `editor-diff-fenced` for Architect mode). This allows you to explicitly choose the format, overriding Aider's internal defaults or automatic selection.
-- Automatically adding `README-prompts.md` and `README-ask.md` as read-only files to the Aider chat context.
+- Automatically adding `README-prompts.md` and `README-ask.md` as read-only files to the Aider chat context (via `.aider.conf.yml`).
 
 Use `./run-aider.sh` in your terminal to start the configuration process. To see detailed usage instructions, including API key setup and menu flow, run `./run-aider.sh -h` or `./run-aider.sh --help`.
 
@@ -165,15 +165,16 @@ If you experience frequent failed edits, especially with complex changes:
 
 ## Changing Aider Settings
 
-You can change aider settings using command line options, a `.aider.conf.yml` file, or environment variables.
+The recommended way to configure Aider is using a `.aider.conf.yml` file.
 
-*   **Command Line Options:** You can specify settings directly when you run the `aider` command. For example, `aider --dark-mode` enables dark mode, which makes code snippets have a dark background rather than glaring white.
 *   **.aider.conf.yml File:** Create a file named `.aider.conf.yml` in your home directory or at the root of your git repository. You can then add settings to this file in YAML format. For example:
 
     ```yaml
     dark-mode: true
     ```
-*   **Environment Variables:** You can set environment variables to configure aider. The environment variable name is usually `AIDER_` followed by the option name in uppercase. For example, to enable dark mode, you would set `AIDER_DARK_MODE=true`. You can set these variables in your shell or in a `.env` file.
+*   **Environment Variables:** You can also set environment variables to configure aider. The environment variable name is usually `AIDER_` followed by the option name in uppercase. For example, to enable dark mode, you would set `AIDER_DARK_MODE=true`. You can set these variables in your shell or in a `.env` file.
+
+*   **Command Line Options:** These are still supported, but `.aider.conf.yml` is preferred for persistent configuration.
 
 See also:
 
