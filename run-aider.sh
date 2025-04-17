@@ -15,7 +15,8 @@ Description:
   The script guides you through selecting the operating mode (Code or Architect),
   the LLM vendor (Google, Anthropic, OpenAI, Deepseek), the specific model,
   and the desired edit format. It manages API keys and prepares the final
-  'aider' command.
+  'aider' command. It also automatically reads files specified under the 'read:'
+  key in a .aider.conf.yml file if found (requires 'yq' to be installed).
 
 API Key Setup:
   API keys are required for the selected LLM vendor(s). They can be provided in
@@ -54,7 +55,7 @@ Menu Flow:
 Pre-Launch Confirmation:
   Before running 'aider', the script will display:
   - The selected mode, models, and edit format.
-  - The exact 'aider' command that will be executed.
+  - The exact 'aider' command that will be executed (including auto-detected --read files).
   You will then have options to:
   - Launch 'aider'.
   - Go back to the Edit Format selection menu.
@@ -614,6 +615,129 @@ _get_vendor_index() {
     echo "$index"
 }
 
+# Finds the first .aider.conf.yml or .aider.conf.yaml file in a predefined search path
+# (current dir, git root, home dir) and extracts the list of files under the 'read:' key using yq.
+# Requires 'yq' to be installed.
+#
+# Args: None
+#
+# Outputs:
+#   - Prints the list of filenames found under the 'read:' key, one per line, to stdout.
+#   - Prints error messages to stderr if 'yq' is not found or if parsing fails.
+#
+# Returns:
+#   - 0 on success (even if no files are found under 'read:').
+#   - 1 if 'yq' is not found or a parsing error occurs.
+_get_read_files_from_config() {
+    local config_file=""
+    local search_paths=()
+    local git_root=""
+
+    # Define search paths
+    search_paths+=(".") # Current directory
+
+    # Git repository root (if in a git repo)
+    git_root=$(git rev-parse --show-toplevel 2>/dev/null)
+    if [[ -n "$git_root" ]]; then
+        search_paths+=("$git_root")
+    fi
+
+    search_paths+=("$HOME") # Home directory
+
+    # Find the first config file that exists
+    for path in "${search_paths[@]}"; do
+        if [[ -f "$path/.aider.conf.yml" ]]; then
+            config_file="$path/.aider.conf.yml"
+            break
+        elif [[ -f "$path/.aider.conf.yaml" ]]; then
+            config_file="$path/.aider.conf.yaml"
+            break
+        fi
+    done
+
+    # If no config file found, return successfully with no output
+    if [[ -z "$config_file" ]]; then
+        # echo "Debug: No .aider.conf.yml or .aider.conf.yaml found in search paths." >&2 # Optional debug
+        return 0
+    fi
+
+    # Check if yq is installed
+    if ! command -v yq &> /dev/null; then
+        echo "Error: 'yq' command not found, but required to parse $config_file for 'read:' files." >&2
+        echo "Please install yq (e.g., 'brew install yq' or see https://github.com/mikefarah/yq#install)" >&2
+        return 1
+    fi
+
+    # echo "Debug: Found aider config file: $config_file" >&2 # Optional debug
+
+    # Use yq to extract the 'read' list safely
+    # '.read // []' handles case where 'read' key doesn't exist (provides empty array)
+    # '.[]?' iterates over the array, handling empty array gracefully
+    local files_list
+    files_list=$(yq e '.read // [] | .[]?' "$config_file")
+    local yq_exit_status=$?
+
+    if [[ $yq_exit_status -ne 0 ]]; then
+        echo "Error: 'yq' failed to parse 'read:' key from $config_file (exit code: $yq_exit_status)." >&2
+        return 1
+    fi
+
+    # Print the list of files, one per line
+    if [[ -n "$files_list" ]]; then
+        echo "$files_list"
+    fi
+
+    return 0
+}
+
+
+# Builds the --read arguments based on files found in .aider.conf.yml.
+# Calls _get_read_files_from_config to get the file list.
+#
+# Args: None
+#
+# Outputs:
+#   - Prints the constructed arguments (--read <filename>), one per line, to stdout.
+#   - Prints error messages to stderr if _get_read_files_from_config fails.
+#
+# Returns:
+#   - 0 on success.
+#   - 1 if _get_read_files_from_config fails.
+_build_read_args() {
+    local files_to_read
+    local args_array=()
+    local file
+
+    # Get the list of files from the config
+    files_to_read=$(_get_read_files_from_config)
+    local get_files_status=$?
+
+    if [[ $get_files_status -ne 0 ]]; then
+        # Error message already printed by _get_read_files_from_config
+        return 1
+    fi
+
+    # Build the arguments if any files were found
+    if [[ -n "$files_to_read" ]]; then
+        # Read the list line by line into the 'file' variable
+        while IFS= read -r file; do
+            # Skip empty lines just in case
+            if [[ -n "$file" ]]; then
+                args_array+=("--read" "$file")
+                # echo "Debug: Adding --read '$file' from config." >&2 # Optional debug
+            fi
+        done <<< "$files_to_read" # Use here-string to feed the list to the loop
+    fi
+
+    # Print the constructed arguments, one per line
+    if [[ ${#args_array[@]} -gt 0 ]]; then
+        printf "%s\n" "${args_array[@]}"
+    fi
+
+    return 0
+}
+
+
 # Builds the command-line arguments related to the main model selection.
 # This includes the --model flag and potentially the vendor-specific API key flag
 # if the key was loaded from a file (not from environment variables).
@@ -783,7 +907,7 @@ _build_code_args() {
 #   - Prints error messages to stderr if aider is not found or if the command fails.
 # Returns:
 #   - 0: Aider launched and exited successfully.
-#   - 1: User chose "Back to Main Menu" OR Aider command not found OR Aider failed.
+#   - 1: User chose "Back to Main Menu" OR Aider command not found OR Aider failed OR config parsing failed.
 #   - 2: User chose "Back to Edit Format Selection".
 launch_aider() {
     local mode=$1
@@ -799,8 +923,30 @@ launch_aider() {
     local editor_api_key_var=""
 
     # Base aider command parts in an array
-    local cmd_array=("aider" "--vim" "--no-auto-commit" "--read" "README-prompts.md" "--read" "README-ask.md")
+    local cmd_array=("aider" "--vim" "--no-auto-commit")
 
+    # --- Add --read arguments from config file ---
+    local read_args_array=()
+    local read_args_output
+    read_args_output=$(_build_read_args)
+    local build_read_status=$?
+
+    if [[ $build_read_status -ne 0 ]]; then
+        # Error message already printed by helper functions
+        read -p "Press Enter to return to the main menu..."
+        return 1 # Indicate failure -> Back to Main Menu
+    fi
+    # Read the output into the array
+    while IFS= read -r arg; do
+        # Ensure we don't add empty strings if output was empty or had blank lines
+        [[ -n "$arg" ]] && read_args_array+=("$arg")
+    done <<< "$read_args_output"
+    # Append read args to the command array
+    cmd_array+=("${read_args_array[@]}")
+    # --- End adding --read arguments ---
+
+
+    # --- Add main model arguments ---
     local main_args_array=()
     while IFS= read -r arg; do
         main_args_array+=("$arg")
@@ -808,11 +954,13 @@ launch_aider() {
     if [ $? -ne 0 ]; then return 1; fi # Exit if helper failed
     # Append main model args to the command array
     cmd_array+=("${main_args_array[@]}")
+    # --- End adding main model arguments ---
 
+
+    # --- Add mode-specific arguments ---
     local mode_args_str
     local mode_args_array=()
     local mode_display_name=""
-    # local editor_display_info="" # No longer needed here
     local launch_title="" # Initialize launch title
 
     # Determine mode-specific args and title
@@ -845,6 +993,8 @@ launch_aider() {
         [[ -n "$arg" ]] && mode_args_array+=("$arg")
     done <<< "$mode_args_str"
     cmd_array+=("${mode_args_array[@]}")
+    # --- End adding mode-specific arguments ---
+
 
     # Check if aider command exists before entering the loop
     if ! command -v aider &> /dev/null; then
@@ -857,7 +1007,7 @@ launch_aider() {
     # Pre-launch confirmation loop
     while true; do
         # --- Build the full command array *including the selected format* ---
-        local current_cmd_array=("${cmd_array[@]}") # Copy base + main + mode args
+        local current_cmd_array=("${cmd_array[@]}") # Copy base + read + main + mode args
         current_cmd_array+=("--edit-format" "$selected_format") # Add selected format
 
         # --- Display the pre-launch menu ---
