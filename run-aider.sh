@@ -9,9 +9,6 @@ check_required_tools() {
     if ! command -v jq &> /dev/null; then
         echo "Error: 'jq' is required for JSON parsing but not found."
         echo "Please install jq using your package manager:"
-        echo "  - Debian/Ubuntu: sudo apt install jq"
-        echo "  - macOS: brew install jq"
-        echo "  - Windows (with chocolatey): choco install jq"
         echo "Falling back to hardcoded defaults."
         return 1
     fi
