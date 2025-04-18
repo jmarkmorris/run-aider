@@ -54,9 +54,54 @@ chmod +x run-aider.sh
 
 ## Customization
 
-**Vendor and Model Changes**
-   - Edit `aider_config.json` to add new vendors and models to the respective arrays.
-   - The configuration file uses a simple JSON structure with vendors, models, and edit formats.
+**Configuration File**
+   - The script requires a configuration file named `aider_config.json` in the same directory.
+   - This file defines all available vendors, models, and edit formats.
+   - You must maintain this file to keep up with new model releases and deprecations.
+
+**JSON Configuration Format**
+```json
+{
+  "vendors": [
+    "OPENAI",
+    "ANTHROPIC",
+    "GOOGLE",
+    "DEEPSEEK"
+  ],
+  "models": {
+    "OPENAI": [
+      "gpt-4o",
+      "gpt-4-turbo"
+    ],
+    "ANTHROPIC": [
+      "claude-3-5-haiku-20241022"
+    ],
+    "GOOGLE": [
+      "gemini/gemini-2.5-pro-exp-03-25"
+    ],
+    "DEEPSEEK": [
+      "deepseek/deepseek-coder"
+    ]
+  },
+  "edit_formats": {
+    "code": [
+      "whole",
+      "diff",
+      "search_replace"
+    ],
+    "architect": [
+      "editor-whole",
+      "editor-diff",
+      "editor-diff-fenced"
+    ]
+  }
+}
+```
+
+**Requirements**
+   - The `jq` command-line tool must be installed for JSON parsing.
+   - All vendors listed in the `vendors` array must have corresponding entries in the `models` object.
+   - Both `code` and `architect` edit formats must be defined.
 
 ## Documentation
 - Interactive help: `./run-aider.sh -h`

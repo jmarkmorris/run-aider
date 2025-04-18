@@ -9,28 +9,40 @@ check_required_tools() {
     if ! command -v jq &> /dev/null; then
         echo "Error: 'jq' is required for JSON parsing but not found."
         echo "Please install jq using your package manager:"
-        echo "Falling back to hardcoded defaults."
-        return 1
+        echo "  - Debian/Ubuntu: sudo apt install jq"
+        echo "  - macOS: brew install jq"
+        echo "  - Windows (with chocolatey): choco install jq"
+        exit 1
     fi
     return 0
 }
 
 # --- JSON Configuration Loading ---
-# Loads configuration from JSON file, with fallback to hardcoded defaults
+# Loads configuration from JSON file
 load_json_config() {
     local config_file="$CONFIG_FILE"
     
     # Check if config file exists
     if [ ! -f "$config_file" ]; then
-        echo "Warning: Configuration file '$config_file' not found."
-        echo "Using hardcoded defaults."
-        return 1
+        echo "Error: Configuration file '$config_file' not found."
+        echo "Please create a configuration file with vendors, models, and edit formats."
+        echo "Example format:"
+        echo '{
+  "vendors": ["OPENAI", "ANTHROPIC"],
+  "models": {
+    "OPENAI": ["gpt-4o", "gpt-4-turbo"],
+    "ANTHROPIC": ["claude-3-5-haiku-20241022"]
+  },
+  "edit_formats": {
+    "code": ["whole", "diff"],
+    "architect": ["editor-whole", "editor-diff"]
+  }
+}'
+        exit 1
     fi
     
-    # Check if jq is available
-    if ! check_required_tools; then
-        return 1
-    fi
+    # Check if jq is available - this will exit if jq is not found
+    check_required_tools
     
     echo "Loading configuration from $config_file..."
     return 0
@@ -139,71 +151,129 @@ VENDOR_KEY_SOURCE=("unset" "unset" "unset" "unset") # Initialize with values to 
 
 # --- Load Configuration from JSON ---
 load_vendors_from_json() {
-    if [ ! -f "$CONFIG_FILE" ] || ! command -v jq &> /dev/null; then
-        # Fallback to hardcoded defaults is now handled in initialize_configuration
-        return 1
+    # Check if vendors exist in the JSON
+    if ! jq -e '.vendors' "$CONFIG_FILE" > /dev/null 2>&1; then
+        echo "Error: 'vendors' field is missing in $CONFIG_FILE"
+        echo "Please ensure the configuration file contains a 'vendors' array."
+        exit 1
     fi
     
-    # Load vendors from JSON using a more compatible approach than mapfile
+    # Load vendors from JSON
     VENDORS=()
     while IFS= read -r line; do
         VENDORS+=("$line")
     done < <(jq -r '.vendors[]' "$CONFIG_FILE")
+    
+    # Check if vendors array is empty
+    if [ ${#VENDORS[@]} -eq 0 ]; then
+        echo "Error: No vendors found in $CONFIG_FILE"
+        echo "Please add at least one vendor to the 'vendors' array."
+        exit 1
+    fi
+    
     return 0
 }
 
 load_models_from_json() {
-    if [ ! -f "$CONFIG_FILE" ] || ! command -v jq &> /dev/null; then
-        # Fallback to hardcoded defaults is now handled in initialize_configuration
-        return 1
+    # Check if models object exists in the JSON
+    if ! jq -e '.models' "$CONFIG_FILE" > /dev/null 2>&1; then
+        echo "Error: 'models' field is missing in $CONFIG_FILE"
+        echo "Please ensure the configuration file contains a 'models' object with models for each vendor."
+        exit 1
     fi
     
     # Load models for each vendor from JSON
+    local missing_vendors=()
+    local empty_models=()
+    
     for vendor in "${VENDORS[@]}"; do
         local models_array_name="${vendor}_MODELS"
-        # Check if the vendor exists in the JSON
+        # Check if the vendor exists in the JSON models section
         if jq -e ".models.\"$vendor\"" "$CONFIG_FILE" > /dev/null 2>&1; then
-            # Load models for this vendor using a more compatible approach than mapfile
-            # Clear the array first
+            # Load models for this vendor
             eval "${models_array_name}=()"
-            # Then populate it
             while IFS= read -r line; do
                 eval "${models_array_name}+=(\"\$line\")"
             done < <(jq -r ".models.\"$vendor\"[]" "$CONFIG_FILE")
+            
+            # Check if models array is empty for this vendor
+            local count
+            eval "count=\${#${models_array_name}[@]}"
+            if [ "$count" -eq 0 ]; then
+                empty_models+=("$vendor")
+            fi
         else
-            echo "Warning: Vendor $vendor not found in JSON models configuration."
-            # Initialize with empty array
-            declare -g "${models_array_name}=()"
+            missing_vendors+=("$vendor")
         fi
     done
+    
+    # Report any missing vendor models
+    if [ ${#missing_vendors[@]} -gt 0 ]; then
+        echo "Error: The following vendors are missing from the 'models' section in $CONFIG_FILE:"
+        for v in "${missing_vendors[@]}"; do
+            echo "  - $v"
+        done
+        echo "Please add model entries for all vendors listed in the 'vendors' array."
+        exit 1
+    fi
+    
+    # Report any empty model arrays
+    if [ ${#empty_models[@]} -gt 0 ]; then
+        echo "Error: The following vendors have empty model arrays in $CONFIG_FILE:"
+        for v in "${empty_models[@]}"; do
+            echo "  - $v"
+        done
+        echo "Please add at least one model for each vendor."
+        exit 1
+    fi
+    
     return 0
 }
 
 load_edit_formats_from_json() {
-    if [ ! -f "$CONFIG_FILE" ] || ! command -v jq &> /dev/null; then
-        # Fallback to hardcoded defaults is now handled in initialize_configuration
-        return 1
+    # Check if edit_formats object exists in the JSON
+    if ! jq -e '.edit_formats' "$CONFIG_FILE" > /dev/null 2>&1; then
+        echo "Error: 'edit_formats' field is missing in $CONFIG_FILE"
+        echo "Please ensure the configuration file contains an 'edit_formats' object with 'code' and 'architect' arrays."
+        exit 1
     fi
     
-    # Load edit formats from JSON using a more compatible approach than mapfile
-    if jq -e '.edit_formats.code' "$CONFIG_FILE" > /dev/null 2>&1; then
-        CODE_EDIT_FORMATS=()
-        while IFS= read -r line; do
-            CODE_EDIT_FORMATS+=("$line")
-        done < <(jq -r '.edit_formats.code[]' "$CONFIG_FILE")
-    else
-        echo "Warning: Code edit formats not found in JSON configuration."
-        CODE_EDIT_FORMATS=("whole" "diff")
+    # Check and load code edit formats
+    if ! jq -e '.edit_formats.code' "$CONFIG_FILE" > /dev/null 2>&1; then
+        echo "Error: 'edit_formats.code' array is missing in $CONFIG_FILE"
+        echo "Please add a 'code' array under 'edit_formats' with format options."
+        exit 1
     fi
     
-    if jq -e '.edit_formats.architect' "$CONFIG_FILE" > /dev/null 2>&1; then
-        ARCHITECT_EDIT_FORMATS=()
-        while IFS= read -r line; do
-            ARCHITECT_EDIT_FORMATS+=("$line")
-        done < <(jq -r '.edit_formats.architect[]' "$CONFIG_FILE")
-    else
-        echo "Warning: Architect edit formats not found in JSON configuration."
-        ARCHITECT_EDIT_FORMATS=("editor-whole" "editor-diff" "editor-diff-fenced")
+    CODE_EDIT_FORMATS=()
+    while IFS= read -r line; do
+        CODE_EDIT_FORMATS+=("$line")
+    done < <(jq -r '.edit_formats.code[]' "$CONFIG_FILE")
+    
+    # Check if code formats array is empty
+    if [ ${#CODE_EDIT_FORMATS[@]} -eq 0 ]; then
+        echo "Error: 'edit_formats.code' array is empty in $CONFIG_FILE"
+        echo "Please add at least one edit format for code mode (e.g., 'whole', 'diff')."
+        exit 1
+    fi
+    
+    # Check and load architect edit formats
+    if ! jq -e '.edit_formats.architect' "$CONFIG_FILE" > /dev/null 2>&1; then
+        echo "Error: 'edit_formats.architect' array is missing in $CONFIG_FILE"
+        echo "Please add an 'architect' array under 'edit_formats' with format options."
+        exit 1
+    fi
+    
+    ARCHITECT_EDIT_FORMATS=()
+    while IFS= read -r line; do
+        ARCHITECT_EDIT_FORMATS+=("$line")
+    done < <(jq -r '.edit_formats.architect[]' "$CONFIG_FILE")
+    
+    # Check if architect formats array is empty
+    if [ ${#ARCHITECT_EDIT_FORMATS[@]} -eq 0 ]; then
+        echo "Error: 'edit_formats.architect' array is empty in $CONFIG_FILE"
+        echo "Please add at least one edit format for architect mode (e.g., 'editor-whole', 'editor-diff')."
+        exit 1
     fi
     
     return 0
@@ -211,72 +281,20 @@ load_edit_formats_from_json() {
 
 # Function to initialize all configuration
 initialize_configuration() {
-    # Set default values first to ensure we always have something
-    # Default vendors
-    VENDORS=(
-        "GOOGLE"
-        "ANTHROPIC"
-        "OPENAI"
-        "DEEPSEEK"
-    )
+    # First check if the configuration file exists and jq is available
+    # This will exit if the file doesn't exist or jq is not installed
+    load_json_config
     
-    # Default models
-    GOOGLE_MODELS=(
-        "gemini/gemini-2.5-pro-exp-03-25"
-        "gemini/gemini-2.5-pro-preview-03-25"
-        "gemini/gemini-2.0-flash-exp"
-        "gemini/gemini-2.0-flash"
-    )
-    ANTHROPIC_MODELS=(
-        "claude-3-7-sonnet-20250219"
-        "claude-3-5-haiku-20241022"
-    )
-    OPENAI_MODELS=(
-        "chatgpt-4o-latest"
-        "gpt-4.5-preview"
-        "openai/o3-mini"
-        "gpt-4o"
-        "gpt-4-turbo"
-    )
-    DEEPSEEK_MODELS=(
-        "deepseek/deepseek-coder"
-        "deepseek-reasoner"
-        "deepseek/deepseek-reasoner"
-        "deepseek/deepseek-chat"
-    )
+    # Initialize empty arrays
+    VENDORS=()
     
-    # Default edit formats
-    CODE_EDIT_FORMATS=(
-        "whole"
-        "diff"
-    )
-    ARCHITECT_EDIT_FORMATS=(
-        "editor-whole"
-        "editor-diff"
-        "editor-diff-fenced"
-    )
+    # Load configuration from JSON
+    # Each of these functions will exit if required data is missing
+    load_vendors_from_json
+    load_models_from_json
+    load_edit_formats_from_json
     
-    # Try to load from JSON
-    local json_loaded=true
-    
-    # Load vendors
-    if ! load_vendors_from_json; then
-        json_loaded=false
-    fi
-    
-    # Load models
-    if ! load_models_from_json; then
-        json_loaded=false
-    fi
-    
-    # Load edit formats
-    if ! load_edit_formats_from_json; then
-        json_loaded=false
-    fi
-    
-    if [ "$json_loaded" = false ]; then
-        echo "Note: Some configuration was loaded from hardcoded defaults."
-    fi
+    echo "Configuration loaded successfully from $CONFIG_FILE"
 }
 
 # --- Centered Menu Titles (Static) ---
