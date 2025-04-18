@@ -1,5 +1,44 @@
 #!/bin/bash
 
+# --- Configuration File Path ---
+CONFIG_FILE="aider_config.json"
+
+# --- Check for Required Tools ---
+check_required_tools() {
+    # Check if jq is installed for JSON parsing
+    if ! command -v jq &> /dev/null; then
+        echo "Error: 'jq' is required for JSON parsing but not found."
+        echo "Please install jq using your package manager:"
+        echo "  - Debian/Ubuntu: sudo apt install jq"
+        echo "  - macOS: brew install jq"
+        echo "  - Windows (with chocolatey): choco install jq"
+        echo "Falling back to hardcoded defaults."
+        return 1
+    fi
+    return 0
+}
+
+# --- JSON Configuration Loading ---
+# Loads configuration from JSON file, with fallback to hardcoded defaults
+load_json_config() {
+    local config_file="$CONFIG_FILE"
+    
+    # Check if config file exists
+    if [ ! -f "$config_file" ]; then
+        echo "Warning: Configuration file '$config_file' not found."
+        echo "Using hardcoded defaults."
+        return 1
+    fi
+    
+    # Check if jq is available
+    if ! check_required_tools; then
+        return 1
+    fi
+    
+    echo "Loading configuration from $config_file..."
+    return 0
+}
+
 # --- Usage Message Function ---
 # Define this early so it's available for the help flag check below
 display_usage() {
@@ -17,6 +56,10 @@ Description:
   and the desired edit format. It manages API keys and prepares the final
   'aider' command. It also automatically reads files specified under the 'read:'
   key in a .aider.conf.yml file if found (requires 'yq' to be installed).
+  
+  The script uses configuration from 'aider_config.json' for vendors, models,
+  and edit formats. If this file is not found or 'jq' is not installed, it will
+  fall back to hardcoded defaults.
 
 API Key Setup:
   API keys are required for the selected LLM vendor(s). They can be provided in
@@ -74,39 +117,17 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     exit 0        # Exit successfully after displaying help
 fi
 
-# --- Model Definitions ---
-# Using indexed arrays for broader bash compatibility
-GOOGLE_MODELS=(
-    "gemini/gemini-2.5-pro-exp-03-25"
-    "gemini/gemini-2.5-pro-preview-03-25"
-    "gemini/gemini-2.0-flash-exp"
-    "gemini/gemini-2.0-flash"
-)
-ANTHROPIC_MODELS=(
-    "claude-3-7-sonnet-20250219"
-    "claude-3-5-haiku-20241022"
-)
-OPENAI_MODELS=(
-    "chatgpt-4o-latest"
-    "gpt-4.5-preview"
-    "openai/o3-mini"
-    "gpt-4o"
-    "gpt-4-turbo"
-)
-DEEPSEEK_MODELS=(
-    "deepseek/deepseek-coder"
-    "deepseek-reasoner"
-    "deepseek/deepseek-reasoner"
-    "deepseek/deepseek-chat"
-)
+# --- Model and Vendor Definitions ---
+# These arrays will be populated from JSON if available, otherwise use hardcoded defaults
 
-# --- Vendor Definitions ---
-VENDORS=(
-    "GOOGLE"
-    "ANTHROPIC"
-    "OPENAI"
-    "DEEPSEEK"
-)
+# Initialize empty arrays
+VENDORS=()
+GOOGLE_MODELS=()
+ANTHROPIC_MODELS=()
+OPENAI_MODELS=()
+DEEPSEEK_MODELS=()
+CODE_EDIT_FORMATS=()
+ARCHITECT_EDIT_FORMATS=()
 
 # Parallel array holding the API key flag for each vendor
 VENDOR_API_KEY_FLAGS=(
@@ -117,20 +138,149 @@ VENDOR_API_KEY_FLAGS=(
 )
 
 # Parallel array to track the source of the API key ("env", "file", or "unset")
-VENDOR_KEY_SOURCE=() # Initialize as empty
+VENDOR_KEY_SOURCE=("unset" "unset" "unset" "unset") # Initialize with values to avoid unbound variable
 
-# --- Edit Format Definitions ---
-# Define the specific format strings to use
-CODE_EDIT_FORMATS=(
-    "whole"
-    "diff"
-    # "line" # Consider adding later if needed
-)
-ARCHITECT_EDIT_FORMATS=(
-    "editor-whole"
-    "editor-diff"
-    "editor-diff-fenced" # Added new format
-)
+# --- Load Configuration from JSON ---
+load_vendors_from_json() {
+    if [ ! -f "$CONFIG_FILE" ] || ! command -v jq &> /dev/null; then
+        # Fallback to hardcoded defaults is now handled in initialize_configuration
+        return 1
+    fi
+    
+    # Load vendors from JSON using a more compatible approach than mapfile
+    VENDORS=()
+    while IFS= read -r line; do
+        VENDORS+=("$line")
+    done < <(jq -r '.vendors[]' "$CONFIG_FILE")
+    return 0
+}
+
+load_models_from_json() {
+    if [ ! -f "$CONFIG_FILE" ] || ! command -v jq &> /dev/null; then
+        # Fallback to hardcoded defaults is now handled in initialize_configuration
+        return 1
+    fi
+    
+    # Load models for each vendor from JSON
+    for vendor in "${VENDORS[@]}"; do
+        local models_array_name="${vendor}_MODELS"
+        # Check if the vendor exists in the JSON
+        if jq -e ".models.\"$vendor\"" "$CONFIG_FILE" > /dev/null 2>&1; then
+            # Load models for this vendor using a more compatible approach than mapfile
+            # Clear the array first
+            eval "${models_array_name}=()"
+            # Then populate it
+            while IFS= read -r line; do
+                eval "${models_array_name}+=(\"\$line\")"
+            done < <(jq -r ".models.\"$vendor\"[]" "$CONFIG_FILE")
+        else
+            echo "Warning: Vendor $vendor not found in JSON models configuration."
+            # Initialize with empty array
+            declare -g "${models_array_name}=()"
+        fi
+    done
+    return 0
+}
+
+load_edit_formats_from_json() {
+    if [ ! -f "$CONFIG_FILE" ] || ! command -v jq &> /dev/null; then
+        # Fallback to hardcoded defaults is now handled in initialize_configuration
+        return 1
+    fi
+    
+    # Load edit formats from JSON using a more compatible approach than mapfile
+    if jq -e '.edit_formats.code' "$CONFIG_FILE" > /dev/null 2>&1; then
+        CODE_EDIT_FORMATS=()
+        while IFS= read -r line; do
+            CODE_EDIT_FORMATS+=("$line")
+        done < <(jq -r '.edit_formats.code[]' "$CONFIG_FILE")
+    else
+        echo "Warning: Code edit formats not found in JSON configuration."
+        CODE_EDIT_FORMATS=("whole" "diff")
+    fi
+    
+    if jq -e '.edit_formats.architect' "$CONFIG_FILE" > /dev/null 2>&1; then
+        ARCHITECT_EDIT_FORMATS=()
+        while IFS= read -r line; do
+            ARCHITECT_EDIT_FORMATS+=("$line")
+        done < <(jq -r '.edit_formats.architect[]' "$CONFIG_FILE")
+    else
+        echo "Warning: Architect edit formats not found in JSON configuration."
+        ARCHITECT_EDIT_FORMATS=("editor-whole" "editor-diff" "editor-diff-fenced")
+    fi
+    
+    return 0
+}
+
+# Function to initialize all configuration
+initialize_configuration() {
+    # Set default values first to ensure we always have something
+    # Default vendors
+    VENDORS=(
+        "GOOGLE"
+        "ANTHROPIC"
+        "OPENAI"
+        "DEEPSEEK"
+    )
+    
+    # Default models
+    GOOGLE_MODELS=(
+        "gemini/gemini-2.5-pro-exp-03-25"
+        "gemini/gemini-2.5-pro-preview-03-25"
+        "gemini/gemini-2.0-flash-exp"
+        "gemini/gemini-2.0-flash"
+    )
+    ANTHROPIC_MODELS=(
+        "claude-3-7-sonnet-20250219"
+        "claude-3-5-haiku-20241022"
+    )
+    OPENAI_MODELS=(
+        "chatgpt-4o-latest"
+        "gpt-4.5-preview"
+        "openai/o3-mini"
+        "gpt-4o"
+        "gpt-4-turbo"
+    )
+    DEEPSEEK_MODELS=(
+        "deepseek/deepseek-coder"
+        "deepseek-reasoner"
+        "deepseek/deepseek-reasoner"
+        "deepseek/deepseek-chat"
+    )
+    
+    # Default edit formats
+    CODE_EDIT_FORMATS=(
+        "whole"
+        "diff"
+    )
+    ARCHITECT_EDIT_FORMATS=(
+        "editor-whole"
+        "editor-diff"
+        "editor-diff-fenced"
+    )
+    
+    # Try to load from JSON
+    local json_loaded=true
+    
+    # Load vendors
+    if ! load_vendors_from_json; then
+        json_loaded=false
+    fi
+    
+    # Load models
+    if ! load_models_from_json; then
+        json_loaded=false
+    fi
+    
+    # Load edit formats
+    if ! load_edit_formats_from_json; then
+        json_loaded=false
+    fi
+    
+    if [ "$json_loaded" = false ]; then
+        echo "Note: Some configuration was loaded from hardcoded defaults."
+    fi
+}
 
 # --- Centered Menu Titles (Static) ---
 # Calculated for an 80-character width
@@ -961,6 +1111,10 @@ main() {
     # Argument parsing for help is handled at the very top of the script.
     # If we reach here, no help flag was provided.
 
+    # Initialize configuration from JSON or fallback to defaults
+    initialize_configuration
+    
+    # Load API keys
     load_api_keys
 
     # Loop indefinitely until user explicitly exits (choice 0)

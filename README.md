@@ -55,7 +55,8 @@ chmod +x run-aider.sh
 ## Customization
 
 **Vendor and Model Changes**
-   - Edit `run-aider.sh` to add new vendors and models to the respective arrays (e.g., `GOOGLE_MODELS`, `VENDORS`).
+   - Edit `aider_config.json` to add new vendors and models to the respective arrays.
+   - The configuration file uses a simple JSON structure with vendors, models, and edit formats.
 
 ## Documentation
 - Interactive help: `./run-aider.sh -h`
