@@ -1,4 +1,2 @@
-# Command-line YAML processor for configuration parsing
-yq
-# Aider chat AI coding assistant
+jq
 aider-chat

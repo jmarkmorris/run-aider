@@ -27,7 +27,7 @@ This tool is intentionally designed for continuous personal evolution. You and y
 - Secure API management (Environment variables or local file)
 - Configuration handled via `.aider.conf.yml` (e.g. `--vim`, `--read`, etc.)
 
-**Customization:** Easily add new vendors and models by modifying the script's model arrays.
+**Customization:** Easily add new vendors and models by modifying a json config file.
 
 ## Getting Started
 

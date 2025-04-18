@@ -143,7 +143,7 @@ Description:
   the LLM vendor (Google, Anthropic, OpenAI, Deepseek), the specific model,
   and the desired edit format. It manages API keys and prepares the final
   'aider' command. It also automatically reads files specified under the 'read:'
-  key in a .aider.conf.yml file if found (requires 'yq' to be installed).
+  key in a .aider.conf.yml file if found.
   
   The script uses configuration from 'aider_config.json' for vendors, models,
   and edit formats. If this file is not found or 'jq' is not installed, it will
@@ -186,7 +186,8 @@ Menu Flow:
 Pre-Launch Confirmation:
   Before running 'aider', the script will display:
   - The selected mode, models, and edit format.
-  - The exact 'aider' command that will be executed (including auto-detected --read files).
+  - The 'aider' command with selected arguments
+  - A display of ~/.aider.conf.yml which has more arguments for aider.
   You will then have options to:
   - Launch 'aider'.
   - Go back to the Edit Format selection menu.
@@ -860,10 +861,6 @@ _get_vendor_index() {
     done
     echo "$index"
 }
-
-
-
-
 
 # Builds the command-line arguments related to the main model selection.
 # This includes the --model flag and potentially the vendor-specific API key flag
