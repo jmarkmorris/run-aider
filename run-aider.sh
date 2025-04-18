@@ -1,4 +1,8 @@
 #!/bin/bash
+#---------------------------------------------------------------------------------
+#AIDER LAUNCH COMMAND RECOVERY
+#aider --model gemini/gemini-2.5-pro-exp-03-25 --chat-mode code --edit-format whole
+#---------------------------------------------------------------------------------
 
 # --- Configuration File Path ---
 CONFIG_FILE="aider_config.json"

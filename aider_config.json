@@ -19,13 +19,11 @@
       "claude-3-5-haiku-20241022"
     ],
     "OPENAI": [
+      "openai/o3-mini-high",
+      "openai/o3-mini",
       "openai/o4-mini",
       "openai/o4-mini-2025-04-16",
-      "chatgpt-4o-latest",
-      "gpt-4.5-preview",
-      "openai/o3-mini",
-      "gpt-4o",
-      "gpt-4-turbo"
+      "gpt-4o"
     ],
     "DEEPSEEK": [
       "deepseek/deepseek-coder",
