@@ -13,10 +13,14 @@
       "gemini/gemini-2.0-flash"
     ],
     "ANTHROPIC": [
+      "claude-3-7-sonnet-latest",
       "claude-3-7-sonnet-20250219",
+      "claude-3-5-haiku-latest",
       "claude-3-5-haiku-20241022"
     ],
     "OPENAI": [
+      "openai/o4-mini",
+      "openai/o4-mini-2025-04-16",
       "chatgpt-4o-latest",
       "gpt-4.5-preview",
       "openai/o3-mini",

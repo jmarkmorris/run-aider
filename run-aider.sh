@@ -44,8 +44,83 @@ load_json_config() {
     # Check if jq is available - this will exit if jq is not found
     check_required_tools
     
+    # Validate that the file contains valid JSON
+    if ! jq empty "$config_file" 2>/dev/null; then
+        echo "Error: Configuration file '$config_file' contains invalid JSON."
+        echo "Please check the file for syntax errors (missing commas, brackets, etc)."
+        exit 1
+    fi
+    
+    # Validate the overall structure of the JSON
+    validate_json_structure "$config_file"
+    
     echo "Loading configuration from $config_file..."
     return 0
+}
+
+# --- Validate JSON Structure ---
+# Validates that the JSON file has the required structure
+validate_json_structure() {
+    local config_file="$1"
+    local missing_fields=()
+    
+    # Check for required top-level fields
+    if ! jq -e '.vendors' "$config_file" > /dev/null 2>&1; then
+        missing_fields+=("vendors")
+    fi
+    
+    if ! jq -e '.models' "$config_file" > /dev/null 2>&1; then
+        missing_fields+=("models")
+    fi
+    
+    if ! jq -e '.edit_formats' "$config_file" > /dev/null 2>&1; then
+        missing_fields+=("edit_formats")
+    fi
+    
+    # Check for required edit_formats subfields
+    if jq -e '.edit_formats' "$config_file" > /dev/null 2>&1; then
+        if ! jq -e '.edit_formats.code' "$config_file" > /dev/null 2>&1; then
+            missing_fields+=("edit_formats.code")
+        fi
+        
+        if ! jq -e '.edit_formats.architect' "$config_file" > /dev/null 2>&1; then
+            missing_fields+=("edit_formats.architect")
+        fi
+    fi
+    
+    # Check that vendors is an array
+    if jq -e '.vendors' "$config_file" > /dev/null 2>&1; then
+        if ! jq -e 'if .vendors | type != "array" then false else true end' "$config_file" > /dev/null 2>&1; then
+            echo "Error: 'vendors' must be an array in $config_file"
+            exit 1
+        fi
+    fi
+    
+    # Check that models is an object
+    if jq -e '.models' "$config_file" > /dev/null 2>&1; then
+        if ! jq -e 'if .models | type != "object" then false else true end' "$config_file" > /dev/null 2>&1; then
+            echo "Error: 'models' must be an object in $config_file"
+            exit 1
+        fi
+    fi
+    
+    # Check that edit_formats is an object
+    if jq -e '.edit_formats' "$config_file" > /dev/null 2>&1; then
+        if ! jq -e 'if .edit_formats | type != "object" then false else true end' "$config_file" > /dev/null 2>&1; then
+            echo "Error: 'edit_formats' must be an object in $config_file"
+            exit 1
+        fi
+    fi
+    
+    # Report missing fields
+    if [ ${#missing_fields[@]} -gt 0 ]; then
+        echo "Error: The following required fields are missing in $config_file:"
+        for field in "${missing_fields[@]}"; do
+            echo "  - $field"
+        done
+        echo "Please ensure the configuration file contains all required fields."
+        exit 1
+    fi
 }
 
 # --- Usage Message Function ---
