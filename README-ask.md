@@ -1,1 +1,1 @@
-/Users/marmorri/vibe/my-globals/README-ask.md
+../my-globals/README-ask.md
