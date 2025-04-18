@@ -21,10 +21,12 @@
     "OPENAI": [
       "openai/o3-mini-high",
       "openai/o3-mini",
+      "o3",
+      "o3-2025-04-16",
+      "openai/o3",
+      "openai/o3-2025-04-16",
       "openai/o4-mini",
-      "openai/o4-mini-2025-04-16",
-      "gpt-4o"
-    ],
+      "openai/o4-mini-2025-04-16"    ],
     "DEEPSEEK": [
       "deepseek/deepseek-coder",
       "deepseek-reasoner",
