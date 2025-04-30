@@ -1,0 +1,71 @@
+{
+  "vendors": [
+    "GOOGLE",
+    "ANTHROPIC",
+    "OPENAI",
+    "DEEPSEEK",
+    "OPENROUTER"
+  ],
+  "models": {
+    "GOOGLE": [
+      "gemini/gemini-2.5-flash-preview-04-17",
+      "gemini/gemini-2.5-pro-exp-03-25",
+      "gemini/gemini-2.5-pro-preview-03-25",
+      "gemini/gemini-2.0-flash-exp",
+      "gemini/gemini-2.0-flash"
+    ],
+    "ANTHROPIC": [
+      "claude-3-7-sonnet-latest",
+      "claude-3-7-sonnet-20250219",
+      "claude-3-5-haiku-latest",
+      "claude-3-5-haiku-20241022"
+    ],
+    "OPENAI": [
+      "o4-mini-2025-04-16",
+      "openai/o4-mini-2025-04-16",
+      "o3-2025-04-16",
+      "openai/o3-2025-04-16",
+      "openai/o3-mini-high",
+      "openai/o3-mini",
+      "o3",
+      "openai/o3"
+    ],
+    "DEEPSEEK": [
+      "deepseek/deepseek-coder",
+      "deepseek-reasoner",
+      "deepseek/deepseek-reasoner",
+      "deepseek/deepseek-chat"
+    ],
+    "OPENROUTER": [
+      "openrouter/anthropic/claude-3-5-haiku",
+      "openrouter/anthropic/claude-3-5-haiku-20241022",
+      "openrouter/anthropic/claude-3.7-sonnet",
+      "openrouter/anthropic/claude-3.7-sonnet:beta",
+      "openrouter/deepseek/deepseek-chat",
+      "openrouter/deepseek/deepseek-chat-v3-0324",
+      "openrouter/deepseek/deepseek-chat-v3-0324:free",
+      "openrouter/deepseek/deepseek-chat:free",
+      "openrouter/deepseek/deepseek-coder",
+      "openrouter/deepseek/deepseek-r1",
+      "openrouter/deepseek/deepseek-r1:free",
+      "openrouter/google/gemini-2.5-pro-exp-03-25:free",
+      "openrouter/google/gemini-2.5-pro-preview-03-25",
+      "openrouter/openai/o3-mini",
+      "openrouter/openai/o3-mini-high"
+    ]
+  },
+  "edit_formats": {
+    "code": [
+      "whole",
+      "diff",
+      "diff-fenced",
+      "udiff",
+      "udiff-simple"
+    ],
+    "architect": [
+      "editor-whole",
+      "editor-diff",
+      "editor-diff-fenced"
+    ]
+  }
+}
