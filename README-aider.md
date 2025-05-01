@@ -9,9 +9,9 @@ Note: there is also an aider package known to pip, but that is something else.
 
 You can run Aider with the --verbose flag to enable verbose output. This will provide detailed logs and information about the operations being performed. If you are using a configuration file for Aider, you can add the --verbose option to the configuration settings.
 
-## Running Aider with run-aider.sh
+## Running Aider with run-aider.py
 
-The `run-aider.sh` script provides an interactive command-line interface to configure and launch `aider`. It simplifies the process by:
+The `run-aider.py` script provides an interactive command-line interface to configure and launch `aider`. It simplifies the process by:
 
 - Allowing you to choose the operating mode:
     - **Code Mode:** Standard `aider` operation for direct code generation and modification.
@@ -21,7 +21,7 @@ The `run-aider.sh` script provides an interactive command-line interface to conf
 - **Providing a dedicated menu step to select the Aider edit format** (`default` – Aider decides automatically, `whole`, `diff`, `diff-fenced`, `udiff`, `udiff-simple` for Code mode; `default`, `editor-whole`, `editor-diff`, `editor-diff-fenced` for Architect mode). This allows you to explicitly choose the format **or** defer to Aider’s internal heuristics.
 - Automatically adding `README-prompts.md` and `README-ask.md` as read-only files to the Aider chat context (via `.aider.conf.yml`).
 
-Use `./run-aider.sh` in your terminal to start the configuration process. To see detailed usage instructions, including API key setup and menu flow, run `./run-aider.sh -h` or `./run-aider.sh --help`.
+Use `python run-aider.py` in your terminal to start the configuration process. To see detailed usage instructions, including API key setup and menu flow, run `python run-aider.py -h` or `python run-aider.py --help`.
 
 ---
 
@@ -50,7 +50,7 @@ Multiple options for sending long, multi-line messages:
 
 ## Vi/Vim Keybindings
 
-Run aider with the `--vim` switch (automatically included by `run-aider.sh`) to enable vi/vim keybindings:
+Run aider with the `--vim` switch (automatically included by `run-aider.py`) to enable vi/vim keybindings:
 
 | Key | Function |
 |-----|----------|
@@ -84,13 +84,13 @@ Run aider with the `--vim` switch (automatically included by `run-aider.sh`) to 
 
 ---
 
-## Edit Formats (`--edit-format`) and `run-aider.sh`
+## Edit Formats (`--edit-format`) and `run-aider.py`
 
-Aider's `--edit-format` option controls how code changes are presented to the LLM (or between LLMs in Architect mode). The `run-aider.sh` script helps select this format explicitly before launching. Understanding the differences can help troubleshoot failed edits.
+Aider's `--edit-format` option controls how code changes are presented to the LLM (or between LLMs in Architect mode). The `run-aider.py` script helps select this format explicitly before launching. Understanding the differences can help troubleshoot failed edits.
 
-**`run-aider.sh` Behavior:**
+**`run-aider.py` Behavior:**
 
-1.  **Dedicated Selection Step:** After selecting the model(s), `run-aider.sh` presents a menu to choose the edit format based on the `aider_config.json` file **plus a dynamic _Default (Aider chooses)_ option**:
+1.  **Dedicated Selection Step:** After selecting the model(s), `run-aider.py` presents a menu to choose the edit format based on the `aider_config.json` file **plus a dynamic _Default (Aider chooses)_ option**:
     *   **Code Mode Options (Example Config):** `default` (automatic), `whole`, `diff`, `diff-fenced`, `udiff`, `udiff-simple`
     *   **Architect Mode Options (Example Config):** `default` (automatic), `editor-whole`, `editor-diff`, `editor-diff-fenced`
 2.  **Explicit Control or Delegation:**  
@@ -107,35 +107,35 @@ Aider's `--edit-format` option controls how code changes are presented to the LL
     *   **How it works:** Sends only calculated differences to the LLM. Aider then attempts to apply this diff/patch to the local file.
     *   **Pros:** Concise, focuses LLM on changes, lower token usage.
     *   **Cons:** Edits can sometimes fail if the LLM generates an invalid diff, if the context lines in the diff don't perfectly match the current file, or if the changes are complex/overlapping.
-    *   **`run-aider.sh` Usage:** Selectable in the Code Mode edit format menu if present in `aider_config.json`.
+    *   **`run-aider.py` Usage:** Selectable in the Code Mode edit format menu if present in `aider_config.json`.
 
 2.  **`whole`**
     *   **What it does:** Presents the *entire* proposed file content to the LLM.
     *   **How it works:** Sends the complete intended file text. Aider replaces the existing file content with the new content received from the LLM. This bypasses the complexities of patch application.
     *   **Pros:** Can be more reliable if `diff` edits fail frequently, as it avoids diff generation/application errors.
     *   **Cons:** Uses significantly more tokens (higher cost, potentially slower), may hit context limits on very large files, and might encourage the LLM to make broader, unintended changes if not prompted carefully.
-    *   **`run-aider.sh` Usage:** Selectable in the Code Mode edit format menu if present in `aider_config.json`.
+    *   **`run-aider.py` Usage:** Selectable in the Code Mode edit format menu if present in `aider_config.json`.
 
 3.  **`diff-fenced`**
     *   **What it does:** Similar to `diff`, but presents the diff to the LLM enclosed within markdown code fences (```diff ... ```).
     *   **How it works:** Sends the calculated differences within markdown fences. Aider then attempts to apply this diff/patch.
     *   **Pros:** May improve reliability for some LLMs by clearly delineating the diff content, potentially leading to better diff generation. Concise, lower token usage than `whole`.
     *   **Cons:** Still relies on diff application, so potential for patch failures remains if the diff is invalid or context mismatches occur.
-    *   **`run-aider.sh` Usage:** Selectable in the Code Mode edit format menu if present in `aider_config.json`.
+    *   **`run-aider.py` Usage:** Selectable in the Code Mode edit format menu if present in `aider_config.json`.
 
 4.  **`udiff`**
     *   **What it does:** Presents changes in the unified diff format.
     *   **How it works:** Sends the calculated differences in unified diff format. Aider then attempts to apply this diff/patch.
     *   **Pros:** Standard diff format, concise, lower token usage than `whole`.
     *   **Cons:** Similar risks of patch application failures as the standard `diff` format.
-    *   **`run-aider.sh` Usage:** Selectable in the Code Mode edit format menu if present in `aider_config.json`.
+    *   **`run-aider.py` Usage:** Selectable in the Code Mode edit format menu if present in `aider_config.json`.
 
 5.  **`udiff-simple`**
     *   **What it does:** Presents changes in a simplified unified diff format.
     *   **How it works:** Sends the calculated differences in a simplified unified diff format. Aider then attempts to apply this diff/patch.
     *   **Pros:** Potentially easier for some LLMs to parse than full `udiff`, concise, lower token usage than `whole`.
     *   **Cons:** Still relies on diff application, so potential for patch failures remains.
-    *   **`run-aider.sh` Usage:** Selectable in the Code Mode edit format menu if present in `aider_config.json`.
+    *   **`run-aider.py` Usage:** Selectable in the Code Mode edit format menu if present in `aider_config.json`.
 
 *Formats available in Architect Mode (control main -> editor interaction, based on example config):*
 
@@ -144,23 +144,23 @@ Aider's `--edit-format` option controls how code changes are presented to the LL
     *   **How it works:** Editor LLM receives only the diff to review/refine. Aider then attempts to apply the (potentially refined) diff.
     *   **Pros:** Focuses editor on refining specific changes, lower token usage than `editor-whole`.
     *   **Cons:** Subject to the same diff application risks as the standard `diff` format if the main or editor LLM produces a problematic diff.
-    *   **`run-aider.sh` Usage:** Selectable in the Architect Mode edit format menu if present in `aider_config.json`.
+    *   **`run-aider.py` Usage:** Selectable in the Architect Mode edit format menu if present in `aider_config.json`.
 
 7.  **`editor-whole`**
     *   **What it does:** Sends the *entire file content* proposed by the *main* LLM to the *editor* LLM.
     *   **How it works:** Editor LLM receives the full proposed file content for review/refinement. Aider then replaces the local file with the final version from the editor LLM. This bypasses diff application issues between the main and editor steps.
     *   **Pros:** Gives editor full context; can be more reliable if `editor-diff` or `editor-diff-fenced` fails.
     *   **Cons:** Uses significantly more tokens than diff-based formats, potentially increasing cost and latency.
-    *   **`run-aider.sh` Usage:** Selectable in the Architect Mode edit format menu if present in `aider_config.json`.
+    *   **`run-aider.py` Usage:** Selectable in the Architect Mode edit format menu if present in `aider_config.json`.
 
 8.  **`editor-diff-fenced`**
     *   **What it does:** Similar to `editor-diff`, but presents the diff to the editor LLM enclosed within markdown code fences (```diff ... ```).
     *   **How it works:** Editor LLM receives the fenced diff. Aider applies the resulting diff.
     *   **Pros:** May improve reliability for some LLMs by clearly delineating the diff content. Token usage similar to `editor-diff`.
     *   **Cons:** Still relies on diff application, so potential for patch failures remains if the diff is invalid or context mismatches occur.
-    *   **`run-aider.sh` Usage:** Selectable in the Architect Mode edit format menu if present in `aider_config.json`.
+    *   **`run-aider.py` Usage:** Selectable in the Architect Mode edit format menu if present in `aider_config.json`.
 
-There are other edit formats available in Aider (like `line`, `search_replace`). The choices offered by `run-aider.sh` depend entirely on the contents of your `aider_config.json` file.
+There are other edit formats available in Aider (like `line`, `search_replace`). The choices offered by `run-aider.py` depend entirely on the contents of your `aider_config.json` file.
 
 **Troubleshooting Edit Failures:**
 
@@ -170,7 +170,7 @@ If you experience frequent failed edits, especially with complex changes:
 
 **Summary:**
 
-*   `run-aider.sh` provides a dedicated menu for selecting Aider's edit format based on `aider_config.json`.
+*   `run-aider.py` provides a dedicated menu for selecting Aider's edit format based on `aider_config.json`.
 *   Your choice in the script **overrides** Aider's internal defaults/automatic selection.
 *   **Code Mode Options (Example Config):** `whole`, `diff`, `diff-fenced`, `udiff`, `udiff-simple`.
 *   **Architect Mode Options (Example Config):** `editor-whole`, `editor-diff`, `editor-diff-fenced`.
